@@ -1,0 +1,14 @@
+=== refs tree ===
+[d] heads
+[d] tags
+
+refs/heads/master exists: false
+
+=== objects: shard sample ===
+  real shards: 256
+    00: 16 objects, e.g. 231c7f114a7a5a46ef3f3ceac294fab0eac953
+    01: 25 objects, e.g. 02819b311f77a5b644290cb6fcc74c11a57084
+    02: 28 objects, e.g. 02d964ee73a1b869b0a75dae83e7699bef53b6
+
+=== scanning for a commit object (bounded) ===
+  scanned=2001 foundCommit=none

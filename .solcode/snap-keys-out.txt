@@ -1,0 +1,110 @@
+=== total keys: 29214 ===
+=== first 25 keys (learn the path format) ===
+  .gitattributes
+  .github\CODEOWNERS
+  .github\CONTRIBUTING.md
+  .github\ISSUE_TEMPLATE\bug_report.yml
+  .github\ISSUE_TEMPLATE\config.yml
+  .github\ISSUE_TEMPLATE\feature_request.yml
+  .github\ISSUE_TEMPLATE\other.yml
+  .github\actions\cloud-sql-rollout-lease\README.md
+  .github\actions\cloud-sql-rollout-lease\action-contract.test.mjs
+  .github\actions\cloud-sql-rollout-lease\action.yml
+  .github\actions\cloud-sql-rollout-lease\gcloud-access-token.mjs
+  .github\actions\cloud-sql-rollout-lease\holder-identity.mjs
+  .github\actions\cloud-sql-rollout-lease\main.mjs
+  .github\actions\cloud-sql-rollout-lease\post.mjs
+  .github\actions\cloud-sql-rollout-lease\renew.mjs
+  .github\actions\cloud-sql-rollout-lease\runner-state.mjs
+  .github\actions\cloud-sql-rollout-lease\storage-lease.mjs
+  .github\actions\cloud-sql-rollout-lease\storage-lease.test.mjs
+  .github\actions\install-mobile-dependencies\action.yml
+  .github\actions\install-node-dependencies\action.yml
+  .github\actions\install-signpath-module\action.yml
+  .github\actions\setup-wsl-test-runtime\action.yml
+  .github\actions\setup-wsl-test-runtime\setup.ps1
+  .github\dependabot.yml
+  .github\pull_request_template.md
+
+=== keys matching custom-agent / customAgent ===
+  src\renderer\src\components\settings\CustomAgentDialog.tsx
+  src\renderer\src\components\settings\CustomAgentsSetting.tsx
+  src\shared\custom-agent-profiles.test.ts
+  src\shared\custom-agent-profiles.ts
+
+=== keys matching tui-agent ===
+  mobile\src\tasks\mobile-tui-agents.ts
+  src\main\ipc\tui-agent-detection-commands.test.ts
+  src\main\ipc\tui-agent-detection-commands.ts
+  src\renderer\src\lib\tui-agent-startup.test.ts
+  src\renderer\src\lib\tui-agent-startup.ts
+  src\shared\require-tui-agent-config.test.ts
+  src\shared\require-tui-agent-config.ts
+  src\shared\tui-agent-config.test.ts
+  src\shared\tui-agent-config.ts
+  src\shared\tui-agent-detection-commands.ts
+  src\shared\tui-agent-display-names.ts
+  src\shared\tui-agent-launch-command-override.ts
+  src\shared\tui-agent-launch-command.ts
+  src\shared\tui-agent-launch-defaults.test.ts
+  src\shared\tui-agent-launch-defaults.ts
+  src\shared\tui-agent-permissions.test.ts
+  src\shared\tui-agent-permissions.ts
+  src\shared\tui-agent-prompt-transport.test.ts
+  src\shared\tui-agent-resume-startup.ts
+  src\shared\tui-agent-selection.test.ts
+
+=== keys matching file-snapshot ===
+  src\main\file-snapshots\file-snapshot-engine.test.ts
+  src\main\file-snapshots\file-snapshot-engine.ts
+  src\main\file-snapshots\file-snapshot-manifest-store.ts
+  src\main\file-snapshots\file-snapshot-object-store.ts
+  src\main\file-snapshots\file-snapshot-paths.ts
+  src\main\file-snapshots\file-snapshot-workspace.ts
+  src\main\ipc\file-snapshots.test.ts
+  src\main\ipc\file-snapshots.ts
+  src\main\shell-wrapper-generated-file-snapshot.test.ts
+  src\preload\api\file-snapshots-api.ts
+  src\preload\api\file-snapshots-bridge.ts
+  src\renderer\src\components\right-sidebar\file-snapshot-diff-dialog.tsx
+  src\renderer\src\components\right-sidebar\use-file-snapshots.ts
+  src\shared\file-snapshot-channels.ts
+  src\shared\file-snapshot-types.ts
+
+=== keys under src/shared (sample) ===
+  (none)
+
+=== how many keys start with src/ ? ===
+  0
+
+=== top-level prefixes (first path segment) ===
+  .gitattributes: 1
+  .github\CODEOWNERS: 1
+  .github\CONTRIBUTING.md: 1
+  .github\ISSUE_TEMPLATE\bug_report.yml: 1
+  .github\ISSUE_TEMPLATE\config.yml: 1
+  .github\ISSUE_TEMPLATE\feature_request.yml: 1
+  .github\ISSUE_TEMPLATE\other.yml: 1
+  .github\actions\cloud-sql-rollout-lease\README.md: 1
+  .github\actions\cloud-sql-rollout-lease\action-contract.test.mjs: 1
+  .github\actions\cloud-sql-rollout-lease\action.yml: 1
+  .github\actions\cloud-sql-rollout-lease\gcloud-access-token.mjs: 1
+  .github\actions\cloud-sql-rollout-lease\holder-identity.mjs: 1
+  .github\actions\cloud-sql-rollout-lease\main.mjs: 1
+  .github\actions\cloud-sql-rollout-lease\post.mjs: 1
+  .github\actions\cloud-sql-rollout-lease\renew.mjs: 1
+  .github\actions\cloud-sql-rollout-lease\runner-state.mjs: 1
+  .github\actions\cloud-sql-rollout-lease\storage-lease.mjs: 1
+  .github\actions\cloud-sql-rollout-lease\storage-lease.test.mjs: 1
+  .github\actions\install-mobile-dependencies\action.yml: 1
+  .github\actions\install-node-dependencies\action.yml: 1
+  .github\actions\install-signpath-module\action.yml: 1
+  .github\actions\setup-wsl-test-runtime\action.yml: 1
+  .github\actions\setup-wsl-test-runtime\setup.ps1: 1
+  .github\dependabot.yml: 1
+  .github\pull_request_template.md: 1
+
+=== second store: $R5OJCX8 ===
+  manifest.files: 442
+  custom-agent matches: 0
+  first 10: .github\workflows\publish-master.yml, .github\workflows\release.yml, .gitignore, .solcode\solcode.md, .zed\settings.json, README.md, api_tests\api_test.go, cmd\solcode\main.go, cmd\solcode\main_test.go, desktop\.gitignore

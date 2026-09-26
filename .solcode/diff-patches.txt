@@ -1,0 +1,13 @@
+=== config/patches: donor vs restored ===
+donor files: 15
+restored files: 14
+
+=== files in donor that are MISSING or SIZE-DIFFERENT in restored ===
+  missing: @xterm__xterm@6.1.0-beta.303.patch  donor=7393117
+
+=== files only in restored (should not be overwritten) ===
+
+=== whole-tree: donor files > 4MB missing in restored ===
+  config/patches/@xterm__xterm@6.1.0-beta.303.patch  (7.1 MB)
+  docs/assets/readme-feature-showcase.gif  (8.2 MB)
+  total large missing: 2

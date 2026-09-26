@@ -1,0 +1,52 @@
+=== orca worktree trash (solcode) ===
+path: C:\Users\solosw\orca\workspaces\solcode\.orca-worktree-trash
+  entryCount=0
+
+=== orca workspace solcode ===
+path: C:\Users\solosw\orca\workspaces\solcode
+  entryCount=1
+  [d] .orca-worktree-trash
+    entryCount=0
+
+=== orca worktree trash (root) ===
+path: C:\Users\solosw\orca\workspaces\.orca-worktree-trash
+  MISSING
+
+=== orca preparing ===
+path: C:\Users\solosw\orca\workspaces\.orca-preparing
+  entryCount=0
+
+=== Recycle Bin, all SIDs ===
+  S-1-5-18: ERR EPERM
+  S-1-5-21-3298863429-323757206-1539849354-1004: 263 entries
+      [f] $I06YDSZ
+      [f] $I07YYUN.json
+      [f] $I094FUM
+      [f] $I0K1W5J.exe
+      [f] $I0KXSV7.jpg
+      [f] $I0N3MVC
+      [f] $I121OXB.json
+      [f] $I15PF32.json
+      [f] $I19ZL17.exe
+      [f] $I1HF1HB.json
+      [f] $I22JKLW.json
+      [f] $I249K1Q.warp-snapshots
+      [f] $I26K3CK
+      [f] $I29Z05O.json
+      [f] $I2CD3BD.json
+      [f] $I2CVDP2.json
+      [f] $I2KM94T
+      [f] $I2THN0X.docx
+      [f] $I2VFAPT.meta
+      [f] $I2Y8VS0
+      [f] $I32ZNPA.keystore
+      [f] $I33338E
+      [f] $I34KKY6
+      [f] $I3ETUGM.png
+      [f] $I3LUU50.exe
+      [f] $I3NIZQK.json
+      [f] $I3OHXUH.json
+      [f] $I3TH193
+      [f] $I3VOV6N.zip
+      [f] $I3VYVH3
+  S-1-5-21-3298863429-323757206-1539849354-500: ERR EPERM

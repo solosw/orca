@@ -1,0 +1,31 @@
+=== ensure:electron-runtime (the step build:win needs) ===
+$ node config/scripts/ensure-native-runtime.mjs --runtime=electron
+[native-runtime] Patched node-pty build artifacts are missing; rebuilding native deps.
+[native-runtime] node-pty: node-pty's conpty native is missing listJobProcessIds, terminateJob, assignCurrentProcessToJob. Resolved from: ../prebuilds/win32-x64/ That build cannot own a PTY tree, so terminatePtyJob degrades to "unavailable" and pane teardown falls back to guessing by PID ancestry. Rebuild node-pty from source so config/patches/node-pty@1.1.0.patch applies.
+[native-runtime] @orca/windows-registry: Cannot find module './build/Release/orca_windows_registry.node'
+[native-runtime] @vscode/windows-process-tree: Cannot find module '../build/Release/windows_process_tree.node'
+node-pty: node-pty's conpty native is missing listJobProcessIds, terminateJob, assignCurrentProcessToJob. Resolved from: ../prebuilds/win32-x64/ That build cannot own a PTY tree, so terminatePtyJob degrades to "unavailable" and pane teardown falls back to guessing by PID ancestry. Rebuild node-pty from source so config/patches/node-pty@1.1.0.patch applies.
+@orca/windows-registry: Cannot find module './build/Release/orca_windows_registry.node'
+Require stack:
+- C:\software\projects\orca\native\windows-registry\index.js
+- C:\software\projects\orca\config\scripts\ensure-native-runtime.mjs
+@vscode/windows-process-tree: Cannot find module '../build/Release/windows_process_tree.node'
+Require stack:
+- C:\software\projects\orca\node_modules\.pnpm\@vscode+windows-process-tre_7fa7a0322de208d70cad687cb70f1b07\node_modules\@vscode\windows-process-tree\lib\index.js
+- C:\software\projects\orca\config\scripts\ensure-native-runtime.mjs
+[rebuild] Skipping optional Electron rebuild modules: cpu-features
+[rebuild] Patched node-pty build artifacts are missing; rebuilding from source.
+(node:16660) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Error: Could not find any Visual Studio installation to use
+    at VisualStudioFinder.fail (C:\software\projects\orca\node_modules\.pnpm\node-gyp@12.3.0\node_modules\node-gyp\lib\find-visualstudio.js:118:11)
+    at VisualStudioFinder.findVisualStudio (C:\software\projects\orca\node_modules\.pnpm\node-gyp@12.3.0\node_modules\node-gyp\lib\find-visualstudio.js:74:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createBuildDir (C:\software\projects\orca\node_modules\.pnpm\node-gyp@12.3.0\node_modules\node-gyp\lib\configure.js:112:18)
+    at async process.<anonymous> (file:///C:/software/projects/orca/node_modules/.pnpm/@electron+rebuild@4.2.0_supports-color@7.2.0/node_modules/@electron/rebuild/lib/module-type/node-gyp/worker.js:22:13)
+
+[rebuild] Native module rebuild failed: node-gyp failed to rebuild 'C:\software\projects\orca\native\windows-registry'
+[native-runtime] node.exe config/scripts/rebuild-native-deps.mjs failed.
+[ELIFECYCLE] Command failed with exit code 1.
+--- exit code: 1 ---

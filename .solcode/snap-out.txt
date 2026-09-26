@@ -1,0 +1,19 @@
+=== recycle bin $R payloads mentioning warp-snapshots or orca ===
+  $R249K1Q.warp-snapshots  kind=dir size=0 entries=2
+  $R5OJCX8.warp-snapshots  kind=dir size=0 entries=2
+
+=== snapshot store candidate ===
+  path: C:\$Recycle.Bin\S-1-5-21-3298863429-323757206-1539849354-1004\$R249K1Q.warp-snapshots
+  exists: true
+  top-level: [f]manifest.json, [d]objects
+  manifest.json exists: true
+  manifest bytes: 4004920
+  manifest.files entries: 29214
+  === presence of key paths ===
+    no  src/shared/custom-agent-profiles.ts
+    no  src/shared/agent-startup-plan-inputs.ts
+    no  src/renderer/src/components/settings/CustomAgentDialog.tsx
+    no  src/renderer/src/components/settings/CustomAgentsSetting.tsx
+    no  src/shared/tui-agent.ts
+    YES package.json
+    no  goal.md

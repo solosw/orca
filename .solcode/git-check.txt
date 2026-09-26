@@ -1,0 +1,31 @@
+=== preserved orca-main.git ===
+exists: true
+entries: config, description, HEAD, hooks, index.lock, info, objects, refs
+
+=== is it a usable git dir? ===
+  HEAD: true
+  config: true
+  objects: true
+  refs: true
+  index: false
+  HEAD: ref: refs/heads/master
+  config:
+    [core]
+    	repositoryformatversion = 0
+    	filemode = false
+    	bare = false
+    	logallrefupdates = true
+    	symlinks = false
+    	ignorecase = true
+    
+  objects/info: 0 files
+  objects/pack: 0 files
+  loose objects: 7731
+
+=== current .git in orca (diagnostic-only) ===
+entries: diag-report.txt, diag.cjs, diag2.cjs, diag3.cjs, diag4.cjs, final-check.txt, finalcheck.cjs, forensics.cjs, forensics.txt, gitdir-check.txt, gitdircheck.cjs, lsdir.cjs, options.cjs, printproof.cjs, proof.cjs, rb-recent.txt, rbrecent.cjs, rbscan.cjs, rbscan.txt, rbtime.cjs, rbtime.txt, recheck.cjs, recover.cjs, recovery-options.txt, recovery-proof.txt, recovery.txt, snap-summary.txt, snapmani.cjs, snapmani.txt, snapscan.cjs, snapscan.txt, snapsummary.cjs, vscode-history.txt, vscodehist.cjs, zlib-proof.txt, zlibproof.cjs
+
+=== is there a packed-refs / any real git data anywhere? ===
+  C:\software\projects\orca\.git\packed-refs: false
+  C:\software\projects\orca\.git\objects: false
+  C:\software\projects\orca-recovery\orca-main.git\packed-refs: false

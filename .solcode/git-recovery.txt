@@ -1,0 +1,65 @@
+=== real .git directories found ===
+  C:\software\projects\06-xuelu-doc\.git  HEAD=ref: refs/heads/8-31  objectsEntries=5
+  C:\software\projects\AI-Command-Center\.git  HEAD=ref: refs/heads/master  objectsEntries=226
+  C:\software\projects\aimuxterm\.git  HEAD=ref: refs/heads/master  objectsEntries=181
+  C:\software\projects\ai_gateaway\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\software\projects\business_help\.git  HEAD=ref: refs/heads/master  objectsEntries=25
+  C:\software\projects\rescue\.git  HEAD=ref: refs/heads/master  objectsEntries=145
+  C:\software\projects\RuoYi-Vue\.git  HEAD=ref: refs/heads/merge/xl-dev-into-main  objectsEntries=258
+  C:\software\projects\RuoYi-Vue\AI-capability-Center\.git  HEAD=ref: refs/heads/main  objectsEntries=81
+  C:\software\projects\RuoYi-Vue\paper-literature-service\.git  HEAD=41fedefe026cf620e5a462dddf78e7ef37491e0d  objectsEntries=45
+  C:\software\projects\RuoYi-Vue\Skills-Evaluation-Center\.git  HEAD=9957f2c3376e445bc03e1fa5c09c5835aa9f1e85  objectsEntries=2
+  C:\software\projects\solcode\.git  HEAD=ref: refs/heads/master  objectsEntries=258
+  C:\software\projects\weiyic\.git  HEAD=ref: refs/heads/master  objectsEntries=93
+  C:\software\sd-webui-aki-v4.10\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\a1111-sd-webui-tagcomplete\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\adetailer\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\multidiffusion-upscaler-for-automatic1111\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-dynamic-thresholding\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-extension-system-info\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-animatediff\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-controlnet\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-infinite-image-browsing\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-lora-block-weight\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-model-converter\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-openpose-editor\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-prompt-all-in-one\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-regional-prompter\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-segment-anything\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\sd-webui-supermerger\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\stable-diffusion-webui-localization-zh_Hans\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\stable-diffusion-webui-model-toolkit\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\stable-diffusion-webui-wd14-tagger\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\extensions\ultimate-upscale-for-automatic1111\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\repositories\BLIP\.git  HEAD=48211a1594f1321b00f14c9f7a5b4813144b2fb9  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\repositories\generative-models\.git  HEAD=45c443b316737a4ab6e40413d7794a7f5657c19f  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\repositories\k-diffusion\.git  HEAD=ab527a9a6d347f364e3d185ba6d714e22d80cb3c  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\repositories\stable-diffusion-stability-ai\.git  HEAD=cf1d67a6fd5ea1aa600c4df58e5b47da45f6bdbf  objectsEntries=2
+  C:\software\sd-webui-aki-v4.10\repositories\stable-diffusion-webui-assets\.git  HEAD=6f7db241d2f8ba7457bac5ca9753331f0c266917  objectsEntries=2
+  C:\Users\solosw\.cargo\registry\index\mirrors.sjtug.sjtu.edu.cn-1072192250ae409d\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\Users\solosw\.cargo\registry\index\mirrors.ustc.edu.cn-5857e57f01837ef8\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\Users\solosw\.claude\plugins\marketplaces\claude-hud\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\Users\solosw\.claude\plugins\marketplaces\claude-plugins-official\.git  HEAD=ref: refs/heads/main  objectsEntries=69
+  C:\Users\solosw\.claude\plugins\marketplaces\superpowers-marketplace\.git  HEAD=ref: refs/heads/main  objectsEntries=2
+  C:\Users\solosw\.codex\.tmp\plugins\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+  C:\Users\solosw\.grok\marketplace-cache\623cc5faaf92eaf4\.git  HEAD=e39bafc6d778d61f41592eced53f8aa58bf5239c  objectsEntries=2
+  C:\Users\solosw\.grok\marketplace-cache\725d01d88773bb74\.git  HEAD=d038aff9ea92159563e40c678fbc8b64b9ff713f  objectsEntries=2
+  C:\Users\solosw\.grok\marketplace-cache\783232b622f8182e\.git  HEAD=e3e378cbbb205673a5d7254ded32679cafa6179d  objectsEntries=2
+  C:\Users\solosw\.grok\marketplace-cache\c6b314fa671daf8c\.git  HEAD=efcdd0c3e225fe02092273f930d14c6ffe10d3e9  objectsEntries=2
+  C:\Users\solosw\Documents\Playground\.git  HEAD=ref: refs/heads/master  objectsEntries=2
+
+=== C:\software\projects\orca\.git full contents ===
+  [f] diag-report.txt
+  [f] diag.cjs
+  [f] diag2.cjs
+  [f] diag3.cjs
+  [f] diag4.cjs
+  [f] forensics.cjs
+  [f] forensics.txt
+  [f] lsdir.cjs
+  [f] recover.cjs
+  [f] recovery.txt
+
+=== is orca a junction/symlink? ===
+  isSymbolicLink=false isDirectory=true
+  realpath=C:\software\projects\orca

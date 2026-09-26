@@ -1,0 +1,18 @@
+donor files (excl. .git/node_modules/out/dist/build): 29504
+present in restored tree: 29181
+MISSING from restored tree: 323
+
+=== missing, grouped by top-level dir ===
+  src: 236
+  resources: 53
+  docs: 29
+  mobile: 5
+
+=== src/main/agent-hooks specifically ===
+  missing count: 193
+  sample: src/main/agent-hooks/agent-hook-memory-sftp.test-fixture.ts, src/main/agent-hooks/agent-status-pane-index.ts, src/main/agent-hooks/branch-rename-failure-output.test.ts, src/main/agent-hooks/branch-rename-failure-output.ts, src/main/agent-hooks/claude-cancel-capture.test-fixture.ts, src/main/agent-hooks/ended-process-reconciliation.test.ts, src/main/agent-hooks/first-work-branch-rename-test-harness.ts, src/main/agent-hooks/first-work-branch-rename.test.ts
+
+=== is the donor the same commit as the snapshot? compare a shared file ===
+  donor  src/shared/tui-agent.ts: 6a1b67c15dcce315
+  target src/shared/tui-agent.ts: 6a1b67c15dcce315
+  identical: true

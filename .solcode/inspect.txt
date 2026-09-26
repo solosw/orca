@@ -1,0 +1,34 @@
+=== orca-main recovery candidates ===
+  original: C:\software\projects\orca-main\.git
+    deleted: 2026-09-25T12:03:27.997Z
+    stated size: 46744455
+    payload path: C:\$Recycle.Bin\S-1-5-21-3298863429-323757206-1539849354-1004\$R6T0RD3.git
+    payload exists: true
+    payload is dir, entries=8
+    first entries: config, description, HEAD, hooks, index.lock, info, objects, refs
+      package.json: false
+      electron.vite.config.ts: false
+      src: false
+      AGENTS.md: false
+      pnpm-lock.yaml: false
+
+  original: C:\software\projects\orca-main
+    deleted: 2026-09-25T12:04:30.583Z
+    stated size: 252638735
+    payload path: C:\$Recycle.Bin\S-1-5-21-3298863429-323757206-1539849354-1004\$RXJIAKQ
+    payload exists: true
+    payload is dir, entries=32
+    first entries: .git, .gitattributes, .github, .gitignore, .husky, .oxfmtrc.json, .oxlintrc.json, AGENTS.md, Casks, CLAUDE.md, cloud, components.json, config, docs, electron.vite.config.ts
+      package.json: true
+      electron.vite.config.ts: true
+      src: true
+      AGENTS.md: true
+      pnpm-lock.yaml: true
+
+  original: C:\software\projects\orca-main.zip
+    deleted: 2026-09-25T11:56:43.323Z
+    stated size: 95418463
+    payload path: C:\$Recycle.Bin\S-1-5-21-3298863429-323757206-1539849354-1004\$RZPQSEV.zip
+    payload exists: true
+    payload is file, size=95418463
+

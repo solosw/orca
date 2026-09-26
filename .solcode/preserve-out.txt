@@ -1,0 +1,13 @@
+copying C:\$Recycle.Bin\S-1-5-21-3298863429-323757206-1539849354-1004\$R249K1Q.warp-snapshots
+     -> C:\software\projects\orca-recovery\snapshot-store
+  done
+copying C:\$Recycle.Bin\S-1-5-21-3298863429-323757206-1539849354-1004\$R6T0RD3.git
+     -> C:\software\projects\orca-recovery\orca-main.git
+  done
+
+=== verify preserved snapshot store ===
+exists: true
+manifest: true
+manifest entries: 29214
+capturedAt: <none>
+objects preserved: 29198

@@ -1,0 +1,49 @@
+manifest entries: 29214
+
+=== top-level trees covered ===
+  src: 22936
+  mobile: 3385
+  tests: 877
+  config: 740
+  cloud: 525
+  docs: 502
+  .github: 95
+  native: 40
+  resources: 40
+  skill-guides: 23
+  (root file): 16
+  .solcode: 10
+  skill-stubs: 9
+  skills: 8
+  examples: 5
+  Casks: 2
+  .husky: 1
+
+node_modules entries: 0
+src entries: 22936
+config entries: 740
+
+=== goal-critical files present? ===
+  YES package.json
+  YES pnpm-lock.yaml
+  YES tsconfig.json
+  YES electron.vite.config.ts
+  YES config\vitest.config.ts
+  YES config\tsconfig.node.json
+  YES config\tsconfig.tc.web.json
+  YES AGENTS.md
+  YES CLAUDE.md
+  YES src\shared\custom-agent-profiles.ts
+  YES src\shared\agent-startup-plan-inputs.ts
+  YES src\shared\file-snapshot-types.ts
+  YES src\main\file-snapshots\file-snapshot-engine.ts
+  YES src\main\ipc\file-snapshots.ts
+  YES src\renderer\src\components\right-sidebar\FileSnapshotsPanel.tsx
+  YES src\renderer\src\i18n\locales\en.json
+  no  goal.md
+
+=== package.json from the snapshot ===
+  name=orca version=1.4.197
+  acp sdk dep: <absent>
+  scripts.build:desktop: present
+  has fileSnapshots scripts: true

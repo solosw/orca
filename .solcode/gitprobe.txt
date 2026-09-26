@@ -1,0 +1,18 @@
+=== is this a git work tree? ===
+fatal: not a git repository (or any of the parent directories): .git
+=== HEAD ===
+fatal: not a git repository (or any of the parent directories): .git
+=== branch ===
+fatal: not a git repository (or any of the parent directories): .git
+=== status (short) ===
+fatal: not a git repository (or any of the parent directories): .git
+=== log -3 ===
+fatal: not a git repository (or any of the parent directories): .git
+=== stash list ===
+fatal: not a git repository (or any of the parent directories): .git
+=== reflog -5 ===
+fatal: not a git repository (or any of the parent directories): .git
+=== .git size ===
+               3 File(s)          1,988 bytes
+               3 File(s)          1,988 bytes
+--- end ---

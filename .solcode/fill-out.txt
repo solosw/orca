@@ -1,0 +1,9 @@
+donor files: 29504
+already present: 29181
+copied to fill gaps: 323
+failed: 0
+still missing after fill: 0
+src/main/agent-hooks exists: true
+  entries: 160
+  server.ts present: true
+  server.ts sha256[:16]: 0c8894b5935f8b8e

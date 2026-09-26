@@ -1,0 +1,22 @@
+=== donor (Recycle Bin): C:\$Recycle.Bin\S-1-5-21-3298863429-323757206-1539849354-1004\$RXJIAKQ\.git ===
+exists: true
+entries: config, description, HEAD, hooks, info, objects, refs
+HEAD: ref: refs/heads/master
+  refs/heads/master exists: false
+  no packed-refs
+refs/heads: (empty)
+refs/remotes: missing
+
+=== preserved copy: C:\software\projects\orca-recovery\orca-main.git ===
+exists: true
+entries: config, description, HEAD, hooks, index.lock, info, objects, refs
+HEAD: ref: refs/heads/master
+  refs/heads/master exists: false
+  no packed-refs
+refs/heads: (empty)
+refs/remotes: missing
+
+=== how many loose objects + packs in donor ===
+  info/: 0 files
+  pack/: 0 files
+  loose objects: 0
