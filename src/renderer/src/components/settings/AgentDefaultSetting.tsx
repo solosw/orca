@@ -6,6 +6,7 @@ import { AgentIcon } from '@/lib/agent-catalog'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import { SettingsSubsectionHeader } from './SettingsFormControls'
+import { AgentSessionHistoryIcon } from '@/components/right-sidebar/agent-session-history-icon'
 
 function DefaultAgentPill({
   active,
@@ -65,6 +66,7 @@ export function AgentDefaultSetting({
     storedDefaultAgent && !enabledDetectedAgents.some((agent) => agent.id === storedDefaultAgent.id)
       ? [...enabledDetectedAgents, storedDefaultAgent]
       : enabledDetectedAgents
+  const hasCustomDefault = Boolean(defaultCustomAgentId)
 
   return (
     <section className="space-y-4">
@@ -73,17 +75,23 @@ export function AgentDefaultSetting({
         description={description}
       />
       <div className="flex flex-wrap gap-2">
-        <DefaultAgentPill active={defaultAgent === null} onClick={() => onSetDefault(null)}>
-          {defaultAgent === null && <Check className="size-3.5" />}
+        <DefaultAgentPill
+          active={defaultAgent === null && !hasCustomDefault}
+          onClick={() => onSetDefault(null)}
+        >
+          {defaultAgent === null && !hasCustomDefault && <Check className="size-3.5" />}
           {translate('auto.components.settings.AgentsPane.92033495ff', 'Auto')}
         </DefaultAgentPill>
-        <DefaultAgentPill active={defaultAgent === 'blank'} onClick={() => onSetDefault('blank')}>
+        <DefaultAgentPill
+          active={defaultAgent === 'blank' && !hasCustomDefault}
+          onClick={() => onSetDefault('blank')}
+        >
           <Terminal className="size-3.5" />
           {translate('auto.components.settings.AgentsPane.110b74b022', 'No agent (blank terminal)')}
-          {defaultAgent === 'blank' && <Check className="size-3.5" />}
+          {defaultAgent === 'blank' && !hasCustomDefault && <Check className="size-3.5" />}
         </DefaultAgentPill>
         {defaultAgentPills.map((agent) => {
-          const isActive = defaultAgent === agent.id
+          const isActive = defaultAgent === agent.id && !hasCustomDefault
           const isUndetected = detectedIds !== null && !detectedIds.has(agent.id)
           return (
             <DefaultAgentPill
@@ -107,22 +115,18 @@ export function AgentDefaultSetting({
         })}
         {(customAgentProfiles ?? []).map((profile) => {
           const isActive = defaultCustomAgentId === profile.id
-          const isUndetected = detectedIds !== null && !detectedIds.has(profile.baseAgent)
           return (
+            // Why no "not detected" state here: a custom agent's command is not
+            // a built-in agent's detection command, so the installed-agent scan
+            // can never speak to it. Its own command line is shown instead,
+            // which is what the user actually needs to verify.
             <DefaultAgentPill
               key={profile.id}
               active={isActive}
               onClick={() => onSetDefaultCustomAgent?.(profile)}
-              title={
-                isUndetected
-                  ? translate(
-                      'auto.components.settings.AgentsPane.storedDefaultUndetected',
-                      'Saved as your default, but not detected right now'
-                    )
-                  : undefined
-              }
+              title={profile.command}
             >
-              <AgentIcon agent={profile.baseAgent} size={14} />
+              <AgentSessionHistoryIcon size={14} />
               {profile.label}
               {isActive && <Check className="size-3.5" />}
             </DefaultAgentPill>

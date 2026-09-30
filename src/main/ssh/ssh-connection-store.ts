@@ -15,6 +15,18 @@ export class SshConnectionStore {
     return this.store.getSshTargets().filter((target) => !isRuntimeOwnedSshTarget(target))
   }
 
+  getSshPassword(targetId: string): string | undefined {
+    return this.store.getSshPassword(targetId)
+  }
+
+  setSshPassword(targetId: string, password: string): void {
+    this.store.setSshPassword(targetId, password)
+  }
+
+  removeSshPassword(targetId: string): void {
+    this.store.removeSshPassword(targetId)
+  }
+
   /** Map of removed-target id → its last known label, from the re-adoption
    *  tombstones. Lets the renderer show a friendly host name for a workspace
    *  still pinned to a target that no longer exists. */

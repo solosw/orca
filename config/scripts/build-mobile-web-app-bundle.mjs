@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { realpathSync } from 'node:fs'
+import { realpathSync, existsSync } from 'node:fs'
 import { basename, extname, join, resolve } from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
@@ -590,6 +590,18 @@ export async function buildMobileWebAppBundle({
   outDir = defaultOutDir,
   pageRoutes = MOBILE_WEB_PAGE_ROUTES
 } = {}) {
+  // Why a preread of mobile/node_modules: esbuild resolves react-native-web (via the
+  // react-native alias), expo-router and react-native-safe-area-context out of this tree,
+  // and when it is absent every route fails to resolve -- one error per import, 400+ lines,
+  // none of which names the actual cause. mobile/ is a separate pnpm project, so a root
+  // install does not populate it.
+  if (!existsSync(join(mobileDir, 'node_modules', 'react-native-web'))) {
+    throw new Error(
+      '[build-mobile-web-app-bundle] mobile/node_modules is missing. Run `pnpm install` in ' +
+        'mobile/ first: the page bundle resolves react-native-web, expo-router and ' +
+        'react-native-safe-area-context from that tree, so every route fails to resolve without it.'
+    )
+  }
   const [
     desktopVersion,
     protocolWindow,

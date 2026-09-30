@@ -161,11 +161,19 @@ function QuickTabBody({
     undefined
   )
   const preferredQuickAgent = useMemo<TuiAgent | null>(() => {
+    if (settings?.defaultCustomAgentId) {
+      return null
+    }
     const pref = settings?.defaultTuiAgent
     // Why: detection can still be pending when quick-create submits; keep the
     // prior catalog fallback while filtering disabled agents out of that choice.
     return pickQuickWorkspaceAgent(pref, cardProps.detectedAgentIds, settings?.disabledTuiAgents)
-  }, [cardProps.detectedAgentIds, settings?.defaultTuiAgent, settings?.disabledTuiAgents])
+  }, [
+    cardProps.detectedAgentIds,
+    settings?.defaultCustomAgentId,
+    settings?.defaultTuiAgent,
+    settings?.disabledTuiAgents
+  ])
   const resolvedQuickAgentSelection = resolveQuickWorkspaceAgentSelection({
     quickAgentOverride,
     preferredQuickAgent,
@@ -180,12 +188,26 @@ function QuickTabBody({
   const quickAgent = resolvedQuickAgentSelection.quickAgent
 
   const handleQuickAgentChange = useCallback((agent: TuiAgent | null) => {
+    setQuickCustomAgentId(null)
     setQuickAgentOverride(agent)
   }, [])
 
+  // Why a separate slot rather than folding into `quickAgentOverride`: picking a
+  // custom agent is not picking a TuiAgent, and the repair logic above would
+  // immediately discard a value it cannot find in the detected set.
+  const [quickCustomAgentId, setQuickCustomAgentId] = useState<string | null>(
+    () => settings?.defaultCustomAgentId ?? null
+  )
+  const handleQuickCustomAgentChange = useCallback((profileId: string | null) => {
+    setQuickCustomAgentId(profileId)
+    // Why: the two are mutually exclusive. Leaving a built-in selected would keep
+    // its PTY startup path armed while the user believes a custom agent will run.
+    setQuickAgentOverride(null)
+  }, [])
+
   const handleCreate = useCallback(async (): Promise<void> => {
-    await submitQuick(quickAgent)
-  }, [quickAgent, submitQuick])
+    await submitQuick(quickCustomAgentId ? null : quickAgent, quickCustomAgentId ?? undefined)
+  }, [quickAgent, quickCustomAgentId, submitQuick])
   // Why: Add Project layers over the composer as a nested dialog instead of
   // replacing it in the activeModal slot — closing the composer mid-flow (and
   // losing the typed name/prompt) was the old, abrupt behavior. Once opened it
@@ -299,6 +321,8 @@ function QuickTabBody({
         nameInputRef={nameInputRef}
         quickAgent={quickAgent}
         onQuickAgentChange={handleQuickAgentChange}
+        quickCustomAgentId={quickCustomAgentId}
+        onQuickCustomAgentChange={handleQuickCustomAgentChange}
         {...cardProps}
         primaryActionLabel={primaryActionLabel}
         onOpenAgentSettings={() => setAgentSettingsOpen(true)}

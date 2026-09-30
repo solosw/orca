@@ -79,6 +79,15 @@ export type WorktreeCreationRequest = {
   agent: TuiAgent | null
   /** Renderer-owned route decision captured at submit time and reused on retry. */
   agentLaunchRoute?: AgentLaunchRoute
+  /**
+   * Saved custom (ACP) agent to start once the workspace exists.
+   *
+   * Why an id rather than a launch descriptor: the command, args and env live in
+   * settings and can be edited between submit and completion, so carrying a copy
+   * would start a stale command. `agent` stays null for this case — a custom
+   * agent is not a TUI agent, and none of the PTY startup machinery applies.
+   */
+  customAgentId?: string
   linkedLinearIssue?: string
   linkedLinearIssueWorkspaceId?: string | null
   linkedLinearIssueOrganizationUrlKey?: string | null

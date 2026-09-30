@@ -112,55 +112,30 @@ describe('resolveAgentStartupPlanInputs', () => {
   })
 })
 
-describe('a custom agent set as the default overrides the base agent launch', () => {
-  const profile = {
-    id: 'work-claude',
-    label: 'Work Claude',
-    baseAgent: 'claude' as const,
-    command: '/opt/work/claude',
-    args: '--model opus',
-    env: { ANTHROPIC_API_KEY: 'work' }
-  }
+describe('a custom agent no longer reshapes a built-in agent launch', () => {
+  // Why this is the load-bearing assertion of the ACP model: a custom agent is
+  // its own process reached over ACP. If a saved profile could still rewrite a
+  // built-in agent's command, arguments, or environment, the two would remain
+  // indistinguishable — which is exactly what the model change removes.
+  const settingsWithCustomAgents = {
+    agentCmdOverrides: { claude: 'from-settings' },
+    agentDefaultArgs: { claude: '--verbose' },
+    agentDefaultEnv: { claude: { KEEP: '1', ANTHROPIC_API_KEY: 'personal' } }
+  } satisfies AgentStartupSettings
+
   const base = {
     agent: 'claude' as const,
-    settings: {
-      agentCmdOverrides: { claude: 'from-settings' },
-      agentDefaultArgs: { claude: '--verbose' },
-      agentDefaultEnv: { claude: { KEEP: '1', ANTHROPIC_API_KEY: 'personal' } },
-      customAgents: [profile],
-      defaultCustomAgentId: 'work-claude'
-    } satisfies AgentStartupSettings,
+    settings: settingsWithCustomAgents,
     platform: 'darwin' as const,
     isRemote: false
   }
 
-  it('applies the profile command, args, and env over the base agent settings', () => {
+  it('launches a built-in agent from its own settings only', () => {
     const inputs = resolveAgentStartupPlanInputs(base)
-
-    expect(inputs.cmdOverrides.claude).toBe('/opt/work/claude')
-    expect(inputs.agentArgs).toBe('--model opus')
-    // Env layers: the profile replaces its own key and leaves the rest of the base env intact.
-    expect(inputs.agentEnv).toEqual({ KEEP: '1', ANTHROPIC_API_KEY: 'work' })
-  })
-
-  it('ignores the profile when it is not the selected default', () => {
-    const inputs = resolveAgentStartupPlanInputs({
-      ...base,
-      settings: { ...base.settings, defaultCustomAgentId: null }
-    })
 
     expect(inputs.cmdOverrides.claude).toBe('from-settings')
     expect(inputs.agentArgs).toBe('--verbose')
     expect(inputs.agentEnv).toEqual({ KEEP: '1', ANTHROPIC_API_KEY: 'personal' })
-  })
-
-  it('ignores the profile when the launched agent is not its base agent', () => {
-    const inputs = resolveAgentStartupPlanInputs({ ...base, agent: 'codex' })
-
-    // Codex keeps its own configured/default launch, not the Claude profile's overrides.
-    expect(inputs.cmdOverrides.codex).toBeUndefined()
-    expect(inputs.agentArgs).not.toBe('--model opus')
-    expect(inputs.agentEnv.ANTHROPIC_API_KEY).toBeUndefined()
   })
 
   it('still lets an explicit per-launch argument override win', () => {
@@ -169,13 +144,13 @@ describe('a custom agent set as the default overrides the base agent launch', ()
     )
   })
 
-  it('keeps every other agent override when a profile supplies a command', () => {
+  it('keeps every other agent override untouched', () => {
     const inputs = resolveAgentStartupPlanInputs({
       ...base,
-      settings: { ...base.settings, agentCmdOverrides: { claude: 'x', codex: 'y' } }
+      settings: { ...settingsWithCustomAgents, agentCmdOverrides: { claude: 'x', codex: 'y' } }
     })
 
-    expect(inputs.cmdOverrides).toEqual({ claude: '/opt/work/claude', codex: 'y' })
+    expect(inputs.cmdOverrides).toEqual({ claude: 'x', codex: 'y' })
   })
 })
 

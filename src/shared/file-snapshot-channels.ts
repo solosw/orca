@@ -6,9 +6,12 @@
 export const FILE_SNAPSHOT_CHANNELS = {
   status: 'fileSnapshots:status',
   capture: 'fileSnapshots:capture',
+  rebuild: 'fileSnapshots:rebuild',
   acceptFile: 'fileSnapshots:acceptFile',
+  acceptFiles: 'fileSnapshots:acceptFiles',
   acceptAll: 'fileSnapshots:acceptAll',
   revertFile: 'fileSnapshots:revertFile',
+  revertFiles: 'fileSnapshots:revertFiles',
   revertAll: 'fileSnapshots:revertAll',
   content: 'fileSnapshots:content'
 } as const

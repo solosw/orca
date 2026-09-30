@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useActiveWorktree, useRepoById } from '@/store/selectors'
+import { useActiveRepo, useActiveWorktree, useActiveWorktreeId, useRepoById } from '@/store/selectors'
 import type {
   FileSnapshotChange,
   FileSnapshotSummary,
   FileSnapshotTarget
 } from '../../../../shared/file-snapshot-types'
+import { resolveFileSnapshotTarget } from './file-snapshot-target'
 
 export type FileSnapshotsState = {
   target: FileSnapshotTarget | null
@@ -14,10 +15,13 @@ export type FileSnapshotsState = {
   error: string | null
   refreshing: boolean
   acceptFile: (change: FileSnapshotChange) => Promise<void>
+  acceptFiles: (relativePaths: readonly string[]) => Promise<void>
   revertFile: (change: FileSnapshotChange) => Promise<void>
+  revertFiles: (relativePaths: readonly string[]) => Promise<void>
   acceptAll: () => Promise<void>
   revertAll: () => Promise<void>
   capture: () => Promise<void>
+  rebuild: () => Promise<void>
   refresh: () => Promise<void>
 }
 
@@ -31,14 +35,31 @@ export type FileSnapshotsState = {
 export function useFileSnapshots(): FileSnapshotsState {
   const activeWorktree = useActiveWorktree()
   const activeRepo = useRepoById(activeWorktree?.repoId ?? null)
+  // Why a second repo lookup, keyed on the active repo rather than the
+  // worktree's: this is the fallback for when no worktree row resolves, and in
+  // exactly that case `activeWorktree?.repoId` is null too, so deriving the
+  // repo from the worktree would leave the fallback permanently unreachable.
+  const fallbackRepo = useActiveRepo()
+  const repo = activeRepo ?? fallbackRepo
   const worktreePath = activeWorktree?.path ?? null
+  const repoPath = repo?.path ?? null
   // Why the connection id rides along: the same relative path means a different
   // file on an SSH host, so the target must carry the host identity.
-  const connectionId = activeRepo?.connectionId ?? undefined
+  const connectionId = repo?.connectionId ?? undefined
 
+  // Why the repo root is the fallback: the active worktree row can be missing
+  // (a host-qualified lookup that missed, or an active repo with nothing
+  // selected), and without a directory the panel had nothing to send.
+  const activeWorktreeId = useActiveWorktreeId()
   const target = useMemo<FileSnapshotTarget | null>(
-    () => (worktreePath ? { workspacePath: worktreePath, connectionId } : null),
-    [worktreePath, connectionId]
+    () =>
+      resolveFileSnapshotTarget({
+        workspaceId: activeWorktreeId ?? activeWorktree?.id ?? repo?.id ?? null,
+        worktreePath,
+        repoPath,
+        connectionId
+      }),
+    [activeWorktree?.id, activeWorktreeId, connectionId, repo?.id, repoPath, worktreePath]
   )
 
   const [summary, setSummary] = useState<FileSnapshotSummary | null>(null)
@@ -90,15 +111,21 @@ export function useFileSnapshots(): FileSnapshotsState {
     return target
   }, [target])
 
+  const targetKey = target
+    ? `${target.workspaceId ?? ''}\u0000${target.connectionId ?? ''}\u0000${target.workspacePath}`
+    : null
+
   useEffect(() => {
+    requestTokenRef.current += 1
+    setSummary(null)
+    setError(null)
+    setRefreshing(false)
+    setLoading(Boolean(target))
     if (!target) {
-      setSummary(null)
-      setLoading(false)
-      setError(null)
       return
     }
     void runSummary(() => window.api.fileSnapshots.status(target), false)
-  }, [target, runSummary])
+  }, [targetKey])
 
   const refresh = useCallback(
     () => runSummary(() => window.api.fileSnapshots.status(requireTarget()), true),
@@ -118,6 +145,19 @@ export function useFileSnapshots(): FileSnapshotsState {
     [requireTarget, runSummary]
   )
 
+  const acceptFiles = useCallback(
+    (relativePaths: readonly string[]) =>
+      runSummary(
+        () =>
+          window.api.fileSnapshots.acceptFiles({
+            target: requireTarget(),
+            relativePaths: [...relativePaths]
+          }),
+        true
+      ),
+    [requireTarget, runSummary]
+  )
+
   const revertFile = useCallback(
     (change: FileSnapshotChange) =>
       runSummary(
@@ -125,6 +165,19 @@ export function useFileSnapshots(): FileSnapshotsState {
           window.api.fileSnapshots.revertFile({
             target: requireTarget(),
             relativePath: change.relativePath
+          }),
+        true
+      ),
+    [requireTarget, runSummary]
+  )
+
+  const revertFiles = useCallback(
+    (relativePaths: readonly string[]) =>
+      runSummary(
+        () =>
+          window.api.fileSnapshots.revertFiles({
+            target: requireTarget(),
+            relativePaths: [...relativePaths]
           }),
         true
       ),
@@ -146,6 +199,11 @@ export function useFileSnapshots(): FileSnapshotsState {
     [requireTarget, runSummary]
   )
 
+  const rebuild = useCallback(
+    () => runSummary(() => window.api.fileSnapshots.rebuild(requireTarget()), true),
+    [requireTarget, runSummary]
+  )
+
   return {
     target,
     summary,
@@ -153,10 +211,13 @@ export function useFileSnapshots(): FileSnapshotsState {
     error,
     refreshing,
     acceptFile,
+    acceptFiles,
     revertFile,
+    revertFiles,
     acceptAll,
     revertAll,
     capture,
+    rebuild,
     refresh
   }
 }

@@ -24,6 +24,7 @@ import {
   type WorktreeCreationStructuredSessionResult
 } from '@/lib/worktree-creation-structured-session'
 import { completeWorktreeCreation } from '@/lib/worktree-creation-completion'
+import { startRequestedCustomAgent } from '@/lib/worktree-creation-custom-agent-start'
 import { ensureWebRuntimeWorktreeTerminalAfterWake } from '@/lib/web-runtime-worktree-terminal-after-wake'
 
 // Why: activePendingCreationId can outlive the terminal route when the user
@@ -177,6 +178,10 @@ export async function executeWorktreeCreation(
       activation = activateAndRevealWorktree(worktree.id, {
         sidebarRevealBehavior: 'auto',
         ...(preparedRequest.agent !== null ? { agent: preparedRequest.agent } : {}),
+        // Why: the ACP agent opens its own conversation tab, so the create must not
+        // seed a blank "Terminal 1" beside it. `agent` stays null for a custom agent,
+        // so naming the surface here is what suppresses that shell.
+        ...(preparedRequest.customAgentId ? { providesInitialSurface: true } : {}),
         ...(result.setup ? { setup: result.setup } : {}),
         ...(result.defaultTabs ? { defaultTabs: result.defaultTabs } : {}),
         ...(startupOpt ? { startup: startupOpt } : {}),
@@ -199,7 +204,7 @@ export async function executeWorktreeCreation(
         // Startup terminal ids and stamped agent tabs are the only safe primary
         // ids when activation returned no result.
         primaryTabId = verifiedLaunchTabId
-      } else if (existingTabs.length === 0) {
+      } else if (existingTabs.length === 0 && !preparedRequest.customAgentId) {
         try {
           primaryTabId = ensureWorktreeHasInitialTerminal(
             useAppStore.getState(),
@@ -219,7 +224,7 @@ export async function executeWorktreeCreation(
           )
         }
       }
-      if (!backendSpawned) {
+      if (!backendSpawned && !preparedRequest.customAgentId) {
         try {
           ensureWebRuntimeWorktreeTerminalAfterWake(worktree.id, {
             startup: startupOpt,
@@ -239,7 +244,9 @@ export async function executeWorktreeCreation(
     const hasExplicitTerminalWork = Boolean(
       startupOpt || result.setup || preparedRequest.issueCommand || result.defaultTabs
     )
-    if (preparedRequest.agent === null || hasExplicitTerminalWork) {
+    // Why: a custom agent provides its own chat surface, so it is not a blank
+    // create that needs a fallback shell — same rule as the activated branch above.
+    if ((preparedRequest.agent === null && !preparedRequest.customAgentId) || hasExplicitTerminalWork) {
       try {
         primaryTabId = ensureWorktreeHasInitialTerminal(
           useAppStore.getState(),
@@ -258,7 +265,7 @@ export async function executeWorktreeCreation(
         console.error('worktree create: initial terminal seeding failed', worktree.id, error)
       }
     }
-    if (!structuredLaunch && !backendSpawned) {
+    if (!preparedRequest.customAgentId && !structuredLaunch && !backendSpawned) {
       try {
         ensureWebRuntimeWorktreeTerminalAfterWake(worktree.id, {
           startup: startupOpt,
@@ -301,6 +308,32 @@ export async function executeWorktreeCreation(
       if (structuredSession.cancelled) {
         return
       }
+    }
+  }
+
+  // Why after the workspace is revealed and before completion is reported: the
+  // ACP agent needs the final worktree path, and opening its tab here means the
+  // completion step below sees a surface already in place. A blank create and an
+  // ACP create differ only in this step, which is what let `agent` stay null and
+  // the whole TUI startup path go untouched.
+  if (preparedRequest.customAgentId) {
+    try {
+      const repoConnectionId =
+        useAppStore.getState().repos.find((repo) => repo.id === worktree.repoId)?.connectionId ?? null
+      const started = startRequestedCustomAgent({
+        request: preparedRequest,
+        worktreeId: worktree.id,
+        worktreePath: worktree.path,
+        connectionId: repoConnectionId
+      })
+      if (started) {
+        primaryTabId = started.tabId
+      }
+    } catch (error) {
+      // Why best-effort: the workspace exists and is usable, so a failure to open
+      // the agent's tab must not strand the creation surface over a finished
+      // workspace. The user can start the agent from the tab bar instead.
+      console.error('worktree create: custom agent start failed', worktree.id, error)
     }
   }
 

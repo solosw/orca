@@ -19,21 +19,39 @@ function normalizeWorkspaceIdentityPath(workspacePath: string): string {
  * reached through an SSH connection is a different set of file contents, and a
  * raw path is not filesystem-safe as a single directory name.
  */
-function fileSnapshotWorkspaceKey(workspacePath: string, connectionId?: string): string {
+function fileSnapshotWorkspaceKey(
+  workspacePath: string,
+  connectionId?: string,
+  workspaceId?: string
+): string {
   const normalizedPath = normalizeWorkspaceIdentityPath(workspacePath)
-  const identity = connectionId
-    ? `ssh:${connectionId}:${normalizedPath}`
-    : `local:${normalizedPath}`
+  const identity = workspaceId
+    ? connectionId
+      ? `ssh:${connectionId}:${workspaceId}:${normalizedPath}`
+      : `local:${workspaceId}:${normalizedPath}`
+    : connectionId
+      ? `ssh:${connectionId}:${normalizedPath}`
+      : `local:${normalizedPath}`
   return createHash('sha256').update(identity).digest('hex').slice(0, 32)
 }
 
-export function fileSnapshotWorkspaceDir(workspacePath: string, connectionId?: string): string {
+function fileSnapshotWorkspaceDir(
+  workspacePath: string,
+  connectionId?: string,
+  workspaceId?: string
+): string {
   return join(
     getAppEnvironment().getPath('userData'),
     FILE_SNAPSHOT_ROOT_DIR_NAME,
-    fileSnapshotWorkspaceKey(workspacePath, connectionId)
+    fileSnapshotWorkspaceKey(workspacePath, connectionId, workspaceId)
   )
 }
+
+export function legacyFileSnapshotWorkspaceDir(workspacePath: string, connectionId?: string): string {
+  return fileSnapshotWorkspaceDir(workspacePath, connectionId)
+}
+
+export { fileSnapshotWorkspaceDir }
 
 export function fileSnapshotManifestPath(workspaceDir: string): string {
   return join(workspaceDir, 'manifest.json')

@@ -107,7 +107,7 @@ export default function TabGroupPanel({
       activeTabId={
         activeTab?.contentType === 'terminal'
           ? activeTab.entityId
-          : activeTab?.contentType === 'agent-session'
+          : activeTab?.contentType === 'agent-session' || activeTab?.contentType === 'acp-session'
             ? activeTab.id
             : null
       }
@@ -117,7 +117,11 @@ export default function TabGroupPanel({
       onActivate={commands.activateTerminal}
       onClose={(terminalId) => {
         const item = resolveGroupTabFromVisibleId(model.groupTabs, terminalId)
-        if (item?.contentType === 'terminal' || item?.contentType === 'agent-session') {
+        if (
+          item?.contentType === 'terminal' ||
+          item?.contentType === 'agent-session' ||
+          item?.contentType === 'acp-session'
+        ) {
           commands.closeItem(item.id)
           return
         }
@@ -160,6 +164,7 @@ export default function TabGroupPanel({
       activeFileId={
         activeTab?.contentType === 'terminal' ||
         activeTab?.contentType === 'agent-session' ||
+        activeTab?.contentType === 'acp-session' ||
         activeTab?.contentType === 'browser' ||
         activeTab?.contentType === 'simulator'
           ? null
@@ -172,7 +177,9 @@ export default function TabGroupPanel({
           ? 'terminal'
           : activeTab?.contentType === 'agent-session'
             ? 'agent-session'
-            : activeTab?.contentType === 'browser'
+            : activeTab?.contentType === 'acp-session'
+              ? 'acp-session'
+              : activeTab?.contentType === 'browser'
               ? 'browser'
               : activeTab?.contentType === 'simulator'
                 ? 'simulator'
@@ -350,6 +357,7 @@ export default function TabGroupPanel({
         {activeTab &&
           activeTab.contentType !== 'terminal' &&
           activeTab.contentType !== 'agent-session' &&
+          activeTab.contentType !== 'acp-session' &&
           activeTab.contentType !== 'browser' &&
           activeTab.contentType !== 'simulator' && (
             <div className="absolute inset-0 flex min-h-0 min-w-0">

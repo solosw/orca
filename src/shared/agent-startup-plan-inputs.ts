@@ -2,11 +2,17 @@ import type { GlobalSettings } from './global-settings-types'
 import type { SessionOptionValue } from './native-chat-session-options'
 import type { TuiAgent } from './tui-agent'
 import { resolveTuiAgentLaunchArgs, resolveTuiAgentLaunchEnv } from './tui-agent-launch-defaults'
-import { resolveCustomAgentLaunchOverrides } from './custom-agent-profiles'
 import type { AgentStartupShell } from './tui-agent-startup-shell'
 import { resolveLocalWindowsAgentStartupShell } from './windows-terminal-shell'
 
-/** The settings slice a launch reads; hosts pass their whole `GlobalSettings` row. */
+/**
+ * The settings slice a launch reads; hosts pass their whole `GlobalSettings` row.
+ *
+ * Why `customAgents` is absent: a custom agent is its own ACP agent, launched
+ * through the ACP session path rather than as a built-in `TuiAgent`. Nothing
+ * here should reshape a built-in agent's startup because a custom agent exists —
+ * that was the pre-ACP override model, and it made the two indistinguishable.
+ */
 export type AgentStartupSettings = Partial<
   Pick<
     GlobalSettings,
@@ -14,8 +20,6 @@ export type AgentStartupSettings = Partial<
     | 'agentDefaultArgs'
     | 'agentDefaultEnv'
     | 'terminalWindowsShell'
-    | 'customAgents'
-    | 'defaultCustomAgentId'
   >
 >
 
@@ -54,26 +58,15 @@ export function resolveAgentStartupPlanInputs(args: {
   sessionOptions?: Record<string, SessionOptionValue> | undefined
 }): AgentStartupPlanInputs {
   const { agent, settings, platform, isRemote, sessionOptions } = args
-  const customOverrides = resolveCustomAgentLaunchOverrides(settings, agent)
   const configuredArgs = resolveTuiAgentLaunchArgs(agent, settings.agentDefaultArgs)
   const configuredEnv = resolveTuiAgentLaunchEnv(agent, settings.agentDefaultEnv)
-  const configuredCmdOverrides = settings.agentCmdOverrides ?? {}
   return {
     agent,
-    // Why: a custom agent's command replaces the base binary exactly like a per-agent override
-    // does, so it rides the same `cmdOverrides` input the launch path already honors.
-    cmdOverrides: customOverrides?.command
-      ? { ...configuredCmdOverrides, [agent]: customOverrides.command }
-      : configuredCmdOverrides,
+    cmdOverrides: settings.agentCmdOverrides ?? {},
     // A per-launch override wins over the Settings default; `null` is "no arguments", so this
     // tests for absence rather than falsiness.
-    agentArgs:
-      args.agentArgs !== undefined
-        ? args.agentArgs
-        : (customOverrides?.args ?? configuredArgs),
-    // Why: the profile's env layers over the base agent's configured env, so it can add or
-    // replace individual variables without having to restate the whole set.
-    agentEnv: customOverrides?.env ? { ...configuredEnv, ...customOverrides.env } : configuredEnv,
+    agentArgs: args.agentArgs !== undefined ? args.agentArgs : configuredArgs,
+    agentEnv: configuredEnv,
     platform,
     shell: resolveLocalWindowsAgentStartupShell({
       platform,

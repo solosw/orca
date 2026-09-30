@@ -454,6 +454,42 @@ describe('createEditorSlice editor drafts', () => {
     expect(store.getState().activeTabType).toBe('terminal')
   })
 
+  it('keeps the worktree active when an ACP session remains after the last editor closes', () => {
+    const store = createEditorStore()
+    store.setState({
+      unifiedTabsByWorktree: {
+        'wt-1': [
+          {
+            id: 'tab-acp',
+            entityId: 'acp-1',
+            groupId: 'group-1',
+            worktreeId: 'wt-1',
+            contentType: 'acp-session',
+            label: 'My Agent',
+            customLabel: null,
+            color: null,
+            sortOrder: 0,
+            createdAt: 1
+          } as Tab
+        ]
+      }
+    })
+
+    store.getState().openFile({
+      filePath: '/repo/notes.md',
+      relativePath: 'notes.md',
+      worktreeId: 'wt-1',
+      language: 'markdown',
+      mode: 'edit'
+    })
+
+    store.getState().closeFile('/repo/notes.md')
+
+    expect(store.getState().activeWorktreeId).toBe('wt-1')
+    expect(store.getState().activeTabType).toBe('acp-session')
+    expect(store.getState().activeTabTypeByWorktree['wt-1']).toBe('acp-session')
+  })
+
   it('falls back to a browser tab when closing all editors in the active worktree', () => {
     const store = createEditorStore()
 

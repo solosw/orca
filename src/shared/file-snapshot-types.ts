@@ -41,6 +41,8 @@ export type FileSnapshotContent = {
 }
 
 export type FileSnapshotTarget = {
+  /** Stable app workspace identity; prevents two workspaces sharing one snapshot store. */
+  workspaceId?: string
   /** Workspace root as the renderer knows it (absolute local path, or remote path for SSH). */
   workspacePath: string
   /** SSH connection id; absent means a local workspace. */

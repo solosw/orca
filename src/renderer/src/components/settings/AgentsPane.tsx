@@ -250,12 +250,11 @@ export function AgentsPane({
         description={getSettingOwnershipSummary('agentLaunchDefaults').description}
         onSetDefault={(agent) => updateSettings({ defaultTuiAgent: agent, defaultCustomAgentId: null })}
         onSetDefaultCustomAgent={(profile) =>
-          // Why: store the base agent in `defaultTuiAgent` so icons/pickers/detection keep working,
-          // and the profile id in `defaultCustomAgentId` so the launch path knows to apply overrides.
-          updateSettings({
-            defaultTuiAgent: profile.baseAgent,
-            defaultCustomAgentId: profile.id
-          })
+          // Why only the id: a custom agent is its own ACP process, selected by
+          // profile id alone. Writing a base agent here would re-introduce the
+          // dependency the ACP model removes, and would misreport which agent is
+          // actually configured as the default.
+          updateSettings({ defaultCustomAgentId: profile.id, defaultTuiAgent: null })
         }
       />
       <AgentRuntimeSetting

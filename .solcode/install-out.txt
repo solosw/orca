@@ -1,5 +1,0 @@
-Scope: all 2 workspace projects
-Error:   × installing dependencies
-  ╰─▶ Failed to read patch file C:\software\projects\orca\config/patches/
-      @xterm__xterm@6.1.0-beta.303.patch: 系统找不到指定的文件。 (os error 2)
-

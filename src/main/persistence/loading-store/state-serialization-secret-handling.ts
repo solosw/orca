@@ -3,6 +3,7 @@ import type { PersistedState } from '../../../shared/persisted-state-types'
 import { collectFolderWorkspaceDiffComments } from '../../folder-workspace-diff-comments'
 import {
   PROTECTED_SECRET_SLOT,
+  sshPasswordSecretSlot,
   sshPtyOwnerLeaseSecretSlot,
   type ProtectedSecretRetentionUpdate
 } from '../../protected-secret-persistence'
@@ -113,6 +114,16 @@ export class StateSerializationSecretHandlingOperations {
       folderWorkspaceDiffComments: collectFolderWorkspaceDiffComments(
         this.runtime.state.folderWorkspaces
       ),
+      ...(Object.keys(this.runtime.state.sshPasswords ?? {}).length > 0
+        ? {
+            sshPasswords: Object.fromEntries(
+              Object.entries(this.runtime.state.sshPasswords ?? {}).map(([targetId, password]) => [
+                targetId,
+                encryptToSentinel(sshPasswordSecretSlot(targetId), password)
+              ])
+            )
+          }
+        : {}),
       sshPtyConsumerRecoveries: (this.runtime.state.sshPtyConsumerRecoveries ?? []).map(
         (record) => ({
           ...record,

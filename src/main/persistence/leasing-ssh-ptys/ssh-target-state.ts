@@ -1,7 +1,10 @@
 import type { PersistedState } from '../../../shared/persisted-state-types'
 import type { RemovedSshTargetTombstone, SshTarget } from '../../../shared/ssh-types'
 import type { ProtectedSecretPersistence } from '../../protected-secret-persistence'
-import { sshPtyOwnerLeaseSecretSlot } from '../../protected-secret-persistence'
+import {
+  sshPasswordSecretSlot,
+  sshPtyOwnerLeaseSecretSlot
+} from '../../protected-secret-persistence'
 import { MAX_CLAUDE_LIVE_PTY_SESSION_IDS } from '../restoring-sessions/pane-alias-normalization'
 import {
   MAX_REMOVED_SSH_TARGET_TOMBSTONES,
@@ -81,14 +84,22 @@ export function updateSshTarget(
 export function removeSshTarget(operations: SshTargetStateOperations, id: string): void {
   const targets = operations.state.sshTargets ?? []
   const recoveries = operations.state.sshPtyConsumerRecoveries ?? []
+  const passwords = operations.state.sshPasswords ?? {}
   const nextTargets = targets.filter((target) => target.id !== id)
   const nextRecoveries = recoveries.filter((record) => record.targetId !== id)
-  if (nextTargets.length === targets.length && nextRecoveries.length === recoveries.length) {
+  const hadPassword = Object.hasOwn(passwords, id)
+  if (
+    nextTargets.length === targets.length &&
+    nextRecoveries.length === recoveries.length &&
+    !hadPassword
+  ) {
     return
   }
   operations.state.sshTargets = nextTargets
   operations.state.sshPtyConsumerRecoveries = nextRecoveries
+  delete passwords[id]
   operations.protectedSecrets.removeRetainedBlob(sshPtyOwnerLeaseSecretSlot(id))
+  operations.protectedSecrets.removeRetainedBlob(sshPasswordSecretSlot(id))
   operations.scheduleSave()
 }
 

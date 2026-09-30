@@ -94,6 +94,26 @@ export function createCloseFileAction(
         const terminalTabsForWorktree = activeWorktreeId
           ? (s.tabsByWorktree[activeWorktreeId] ?? [])
           : []
+        // Why unified-only kinds count: ACP / structured-agent / simulator tabs are
+        // not openFiles or terminal rows. Ignoring them made closing the last editor
+        // null out activeWorktreeId while an ACP chat was still open, which hid the
+        // overlay even though the agent kept running.
+        const remainingUnifiedSessions = activeWorktreeId
+          ? (s.unifiedTabsByWorktree?.[activeWorktreeId] ?? []).filter(
+              (tab) =>
+                tab.entityId !== fileId &&
+                (tab.contentType === 'acp-session' ||
+                  tab.contentType === 'agent-session' ||
+                  tab.contentType === 'simulator')
+            )
+          : []
+        const fallbackSessionType =
+          remainingUnifiedSessions.find((tab) => tab.contentType === 'acp-session')
+            ?.contentType ??
+          remainingUnifiedSessions.find((tab) => tab.contentType === 'agent-session')
+            ?.contentType ??
+          remainingUnifiedSessions[0]?.contentType ??
+          null
         const fallbackBrowserTabId =
           activeWorktreeId && browserTabsForWorktree.length > 0
             ? (s.activeBrowserTabIdByWorktree[activeWorktreeId] ??
@@ -103,19 +123,30 @@ export function createCloseFileAction(
         const newActiveTabType =
           remainingForWorktree.length > 0
             ? s.activeTabType
-            : browserTabsForWorktree.length > 0
-              ? 'browser'
-              : 'terminal'
+            : fallbackSessionType === 'acp-session' ||
+                fallbackSessionType === 'agent-session' ||
+                fallbackSessionType === 'simulator'
+              ? fallbackSessionType
+              : browserTabsForWorktree.length > 0
+                ? 'browser'
+                : 'terminal'
         const newActiveTabTypeByWorktree = { ...s.activeTabTypeByWorktree }
         if (activeWorktreeId && remainingForWorktree.length === 0) {
           newActiveTabTypeByWorktree[activeWorktreeId] =
-            browserTabsForWorktree.length > 0 ? 'browser' : 'terminal'
+            fallbackSessionType === 'acp-session' ||
+            fallbackSessionType === 'agent-session' ||
+            fallbackSessionType === 'simulator'
+              ? fallbackSessionType
+              : browserTabsForWorktree.length > 0
+                ? 'browser'
+                : 'terminal'
         }
         const shouldDeactivateWorktree =
           activeWorktreeId !== null &&
           remainingForWorktree.length === 0 &&
           browserTabsForWorktree.length === 0 &&
-          terminalTabsForWorktree.length === 0
+          terminalTabsForWorktree.length === 0 &&
+          remainingUnifiedSessions.length === 0
 
         // Why: prune the closed id from tabBarOrderByWorktree so stale ids don't shift positions on the next reconcile.
         const worktreeId = closedFile?.worktreeId ?? activeWorktreeId

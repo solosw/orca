@@ -15,6 +15,7 @@ import {
 } from '../../startup/startup-diagnostics'
 import {
   PROTECTED_SECRET_SLOT,
+  sshPasswordSecretSlot,
   sshPtyOwnerLeaseSecretSlot
 } from '../../protected-secret-persistence'
 import {
@@ -145,6 +146,24 @@ export class LoadedStateParsingOperations {
             PROTECTED_SECRET_SLOT.browserKagiSessionLink,
             parsed.ui.browserKagiSessionLink,
             (value) => normalizeKagiSessionLink(value) !== null
+          )
+        }
+        if (
+          parsed.sshPasswords &&
+          typeof parsed.sshPasswords === 'object' &&
+          !Array.isArray(parsed.sshPasswords)
+        ) {
+          parsed.sshPasswords = Object.fromEntries(
+            Object.entries(parsed.sshPasswords).flatMap(([targetId, ciphertext]) => {
+              if (!targetId || typeof ciphertext !== 'string') {
+                return []
+              }
+              const decrypted = this.runtime.protectedSecrets.decryptWithStatus(
+                sshPasswordSecretSlot(targetId),
+                ciphertext
+              )
+              return [[targetId, decrypted.status === 'decrypted' ? decrypted.plaintext : '']]
+            })
           )
         }
         parsed.sshPtyConsumerRecoveries = (

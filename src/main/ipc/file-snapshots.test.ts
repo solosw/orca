@@ -10,7 +10,9 @@ const {
   summaryMock,
   captureMock,
   acceptFileMock,
+  acceptFilesMock,
   revertFileMock,
+  revertFilesMock,
   contentMock
 } = vi.hoisted(() => ({
   handleMock: vi.fn(),
@@ -18,7 +20,9 @@ const {
   summaryMock: vi.fn(),
   captureMock: vi.fn(),
   acceptFileMock: vi.fn(),
+  acceptFilesMock: vi.fn(),
   revertFileMock: vi.fn(),
+  revertFilesMock: vi.fn(),
   contentMock: vi.fn()
 }))
 
@@ -34,8 +38,10 @@ vi.mock('../file-snapshots/file-snapshot-engine', () => ({
     summary: summaryMock,
     capture: captureMock,
     acceptFile: acceptFileMock,
+    acceptFiles: acceptFilesMock,
     acceptAll: captureMock,
     revertFile: revertFileMock,
+    revertFiles: revertFilesMock,
     revertAll: captureMock,
     content: contentMock
   }))
@@ -68,7 +74,9 @@ describe('registerFileSnapshotHandlers', () => {
     summaryMock.mockReset().mockResolvedValue(SUMMARY)
     captureMock.mockReset().mockResolvedValue(SUMMARY)
     acceptFileMock.mockReset().mockResolvedValue(SUMMARY)
+    acceptFilesMock.mockReset().mockResolvedValue(SUMMARY)
     revertFileMock.mockReset().mockResolvedValue(SUMMARY)
+    revertFilesMock.mockReset().mockResolvedValue(SUMMARY)
     contentMock.mockReset().mockResolvedValue({ original: '', modified: '', binary: false })
     handleMock.mockImplementation((channel: string, handler: Handler) => {
       handlers.set(channel, handler)
@@ -137,12 +145,36 @@ describe('registerFileSnapshotHandlers', () => {
     expect(acceptFileMock).toHaveBeenCalledWith('src/app.ts')
   })
 
+  it('forwards bulk acceptFiles and rejects bad path lists', async () => {
+    await handlerFor(FILE_SNAPSHOT_CHANNELS.acceptFiles)(null, {
+      target: { workspacePath: '/repo' },
+      relativePaths: ['src/a.ts', 'src/b.ts']
+    })
+    expect(acceptFilesMock).toHaveBeenCalledWith(['src/a.ts', 'src/b.ts'])
+
+    await expect(
+      handlerFor(FILE_SNAPSHOT_CHANNELS.acceptFiles)(null, {
+        target: { workspacePath: '/repo' },
+        relativePaths: ['../escape.ts']
+      })
+    ).rejects.toThrow(/relativePath/)
+    expect(acceptFilesMock).toHaveBeenCalledTimes(1)
+  })
+
   it('forwards a valid revertFile to the engine', async () => {
     await handlerFor(FILE_SNAPSHOT_CHANNELS.revertFile)(null, {
       target: { workspacePath: '/repo' },
       relativePath: 'src/app.ts'
     })
     expect(revertFileMock).toHaveBeenCalledWith('src/app.ts')
+  })
+
+  it('forwards bulk revertFiles to the engine', async () => {
+    await handlerFor(FILE_SNAPSHOT_CHANNELS.revertFiles)(null, {
+      target: { workspacePath: '/repo' },
+      relativePaths: ['src/a.ts', 'src/b.ts']
+    })
+    expect(revertFilesMock).toHaveBeenCalledWith(['src/a.ts', 'src/b.ts'])
   })
 
   it('forwards content requests with the parsed path', async () => {

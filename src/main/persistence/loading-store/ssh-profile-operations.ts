@@ -24,6 +24,7 @@ import {
 } from '../leasing-ssh-ptys/ssh-target-reassignment'
 import { allocateSshTargetGeneration as allocateSshTargetGenerationOperation } from '../scheduling-automations/automation-owner-projection'
 
+import { sshPasswordSecretSlot } from '../../protected-secret-persistence'
 import type { StoreRuntimeState } from './store-runtime-state'
 import type { WriteSchedulingOperations } from './write-scheduling'
 import type { WriteFlushBarrierOperations } from './write-flush-barriers'
@@ -52,6 +53,27 @@ export class SshProfileOperations {
     repos: RepoLifecycleOperations
   ) {
     this[sshProfileOperationsContext] = { runtime, scheduling, flushBarriers, repos }
+  }
+
+  getSshPassword(targetId: string): string | undefined {
+    return this[sshProfileOperationsContext].runtime.state.sshPasswords?.[targetId]
+  }
+
+  setSshPassword(targetId: string, password: string): void {
+    const runtime = this[sshProfileOperationsContext].runtime
+    runtime.state.sshPasswords ??= {}
+    runtime.state.sshPasswords[targetId] = password
+    scheduleSave(this[sshProfileOperationsContext].scheduling)
+  }
+
+  removeSshPassword(targetId: string): void {
+    const runtime = this[sshProfileOperationsContext].runtime
+    if (!runtime.state.sshPasswords || !(targetId in runtime.state.sshPasswords)) {
+      return
+    }
+    delete runtime.state.sshPasswords[targetId]
+    runtime.protectedSecrets.removeRetainedBlob(sshPasswordSecretSlot(targetId))
+    scheduleSave(this[sshProfileOperationsContext].scheduling)
   }
 
   getSshTargets(): SshTarget[] {

@@ -62,6 +62,19 @@ export function createWorkspaceTabCloseCommands({
       }
       return
     }
+    if (item.contentType === 'acp-session') {
+      // Why close the ACP process here: unlike editor tabs, an ACP conversation is
+      // not retired by closeFile. Leaving only closeUnifiedTab would drop the tab
+      // while the agent child kept running in main.
+      closeUnifiedTab(item.id)
+      void window.api.acp.close({ sessionId: item.entityId }).catch(() => {
+        // The tab is already gone; a missing session on close is not actionable UI.
+      })
+      if (!opts?.skipEmptyCheck) {
+        leaveWorktreeIfEmpty()
+      }
+      return
+    }
     if (item.contentType === 'terminal') {
       // Why: closeTerminalTab can defer behind a pin / running-process dialog, so the
       // empty check has to run on the actual close — never on cancel.

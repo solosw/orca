@@ -1,7 +1,12 @@
+import { randomUUID } from 'node:crypto'
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
-import { gzipSync, gunzipSync } from 'node:zlib'
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { promisify } from 'node:util'
+import { gzip, gunzip } from 'node:zlib'
+
+const gzipAsync = promisify(gzip)
+const gunzipAsync = promisify(gunzip)
 import { fileSnapshotObjectPath } from './file-snapshot-paths'
 
 /**
@@ -38,14 +43,24 @@ export async function writeFileSnapshotObject(
     return
   }
   await mkdir(dirname(objectPath), { recursive: true })
-  const tempPath = `${objectPath}.${process.pid}.${Date.now()}.tmp`
+  const tempPath = `${objectPath}.${process.pid}.${randomUUID()}.tmp`
   let renamed = false
   try {
     // Why gzip: snapshot objects are the bulk of this feature's disk use and
     // the common case — source text — compresses several-fold.
-    await writeFile(tempPath, gzipSync(content), { mode: 0o600 })
-    await rename(tempPath, objectPath)
-    renamed = true
+    await writeFile(tempPath, await gzipAsync(content), { mode: 0o600 })
+    try {
+      await rename(tempPath, objectPath)
+      renamed = true
+    } catch (error: unknown) {
+      // Another concurrent worker may have published the same content hash.
+      // The content-addressed winner is valid; discard only this temp file.
+      if (await hasFileSnapshotObject(workspaceDir, hash)) {
+        renamed = true
+        return
+      }
+      throw error
+    }
   } finally {
     if (!renamed) {
       await rm(tempPath, { force: true }).catch(() => {})
@@ -53,14 +68,43 @@ export async function writeFileSnapshotObject(
   }
 }
 
-/** Returns null when the object is absent or unreadable, so a pruned store degrades to "no snapshot". */
+export async function pruneFileSnapshotObjects(
+  workspaceDir: string,
+  referencedHashes: ReadonlySet<string>
+): Promise<void> {
+  const objectsDir = join(workspaceDir, 'objects')
+  let buckets
+  try {
+    buckets = await readdir(objectsDir, { withFileTypes: true })
+  } catch {
+    return
+  }
+  await Promise.all(
+    buckets
+      .filter((bucket) => bucket.isDirectory())
+      .map(async (bucket) => {
+        const entries = await readdir(join(objectsDir, bucket.name), { withFileTypes: true })
+        await Promise.all(
+          entries
+            .filter((entry) => entry.isFile())
+            .filter((entry) => !referencedHashes.has(`${bucket.name}${entry.name}`))
+            .map((entry) => rm(join(objectsDir, bucket.name, entry.name), { force: true }))
+        )
+      })
+  )
+}
+
+export async function clearFileSnapshotObjects(workspaceDir: string): Promise<void> {
+  await rm(join(workspaceDir, 'objects'), { recursive: true, force: true })
+}
+
 export async function readFileSnapshotObject(
   workspaceDir: string,
   hash: string
 ): Promise<Buffer | null> {
   try {
     const raw = await readFile(fileSnapshotObjectPath(workspaceDir, hash))
-    return gunzipSync(raw)
+    return await gunzipAsync(raw)
   } catch {
     return null
   }

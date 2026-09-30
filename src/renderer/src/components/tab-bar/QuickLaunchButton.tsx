@@ -3,11 +3,23 @@ import { Loader2, Settings as SettingsIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { DropdownMenuItem, DropdownMenuShortcut } from '@/components/ui/dropdown-menu'
 import { getAgentCatalog, AgentIcon } from '@/lib/agent-catalog'
+import { AgentLetterIcon } from '@/lib/agent-icon-glyphs'
 import { useAppStore } from '@/store'
 import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
 import { useDetectedAgents } from '@/hooks/useDetectedAgents'
 import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
+import { resolveAgentLaunchExecutionContext } from '@/lib/launch-agent-execution-context'
+import {
+  launchCustomAgentInNewTab,
+  type AcpLaunchTarget
+} from '@/lib/launch-custom-agent-in-new-tab'
+import {
+  customAgentGlyph,
+  getCustomAgentPickerEntries,
+  type CustomAgentPickerEntry
+} from '@/lib/custom-agent-picker-entries'
+import { normalizeCustomAgentProfiles } from '../../../../shared/custom-agent-profiles'
 import { isAgentSessionHandleProvider } from '../../../../shared/agent-session-provider-handle'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import type { LaunchSource } from '../../../../shared/telemetry-events'
@@ -112,6 +124,9 @@ function QuickLaunchAgentMenuItemsInner({
   const agentDetectionTarget = useAgentDetectionTargetForWorktree(worktreeId)
   const { detectedIds } = useDetectedAgents(agentDetectionTarget)
   const defaultAgent = useAppStore((s) => s.settings?.defaultTuiAgent)
+  // Why the whole settings slice: the custom-agent list is persisted settings
+  // state, and the menu must re-render when the user edits it.
+  const settings = useAppStore((s) => s.settings)
   const disabledAgents = useAppStore(
     (s) => s.settings?.disabledTuiAgents ?? DEFAULT_DISABLED_TUI_AGENTS
   )
@@ -185,6 +200,53 @@ function QuickLaunchAgentMenuItemsInner({
   const enabledDetectedIds = detectedIds ? filterEnabledTuiAgents(detectedIds, disabledAgents) : []
   const agents = detectedIds ? orderAgents(defaultAgent, enabledDetectedIds) : []
 
+  // Why custom agents are listed regardless of detection: they are the user's own
+  // commands, so there is no PATH probe that could decide whether one is
+  // "installed" — the user defined it, and a failed start is reported in its tab.
+  const customAgentProfiles = normalizeCustomAgentProfiles(settings?.customAgents)
+  const customAgentEntries = getCustomAgentPickerEntries(customAgentProfiles)
+
+  const runCustomAgentLaunch = useCallback(
+    (entry: CustomAgentPickerEntry) => {
+      const profile = customAgentProfiles.find(
+        (candidate) => candidate.id === entry.profileId
+      )
+      if (!profile) {
+        return
+      }
+      const store = useAppStore.getState()
+      const worktree = store.allWorktrees?.().find((candidate) => candidate.id === worktreeId)
+      const context = resolveAgentLaunchExecutionContext(store, { worktreeId })
+      // Why the workspace path is the target: a custom agent runs *in* the
+      // workspace it was launched from, and for an SSH worktree that same path
+      // is resolved on the host by the remote transport.
+      const target: AcpLaunchTarget = {
+        cwd: worktree?.path ?? '',
+        ...(context.worktreeSshConnectionId
+          ? { connectionId: context.worktreeSshConnectionId }
+          : {})
+      }
+      const result = launchCustomAgentInNewTab({
+        profile,
+        worktreeId,
+        groupId,
+        target
+      })
+      if (!result) {
+        toast.error(
+          translate(
+            'auto.components.tab.bar.QuickLaunchButton.customAgentLaunchFailed',
+            'Could not start {{value0}} — it has no command.',
+            { value0: entry.label }
+          )
+        )
+        return
+      }
+      onFocusTerminal(result.tabId)
+    },
+    [customAgentProfiles, groupId, onFocusTerminal, worktreeId]
+  )
+
   return (
     <>
       {agents.length === 0 ? (
@@ -231,6 +293,34 @@ function QuickLaunchAgentMenuItemsInner({
           </DropdownMenuItem>
         )
       })}
+      {/* Why after the built-ins and before settings: custom agents are an
+          addition the user made, so they read as a group rather than
+          interleaving with detected agents the user did not choose. */}
+      {customAgentEntries.length > 0 ? (
+        <>
+          <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+            {translate(
+              'auto.components.tab.bar.QuickLaunchButton.customAgents',
+              'Custom agents'
+            )}
+          </div>
+          {customAgentEntries.map((entry) => (
+            <DropdownMenuItem
+              key={entry.id}
+              onSelect={() => runCustomAgentLaunch(entry)}
+              className="gap-2 rounded-[7px] px-2 py-1.5 text-[12px] leading-5 font-medium"
+              title={translate(
+                'auto.components.tab.bar.QuickLaunchButton.launchCustomAgent',
+                'Start {{value0}} ({{value1}})',
+                { value0: entry.label, value1: entry.command }
+              )}
+            >
+              <AgentLetterIcon letter={customAgentGlyph(entry)} size={14} />
+              <span className="flex-1 truncate">{entry.label}</span>
+            </DropdownMenuItem>
+          ))}
+        </>
+      ) : null}
       <DropdownMenuItem
         onSelect={openAgentSettings}
         className="gap-2 rounded-[7px] px-2 py-1.5 text-[12px] leading-5 font-medium text-muted-foreground"

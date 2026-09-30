@@ -30,6 +30,7 @@
           "error",
           {
             "allow": [
+              "acp-*",
               "comment-md-*",
               "compact-agent-*",
               "feature-wall-*",

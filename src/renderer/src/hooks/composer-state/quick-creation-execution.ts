@@ -87,7 +87,8 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
       workspaceNameSeed: string,
       workspaceRunContext: WorktreeCreationRequest['workspaceRunContext'],
       repoId: string,
-      selectedRepo: Repo
+      selectedRepo: Repo,
+      customAgentId?: string
     ): Promise<void> => {
       const prepared = await prepareQuickSubmit(
         smartGitHubResolution,
@@ -238,6 +239,7 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
         pushTarget: submitPushTarget,
         agent,
         agentLaunchRoute,
+        ...(customAgentId ? { customAgentId } : {}),
         linkedLinearIssue,
         linkedLinearIssueWorkspaceId,
         linkedLinearIssueOrganizationUrlKey,

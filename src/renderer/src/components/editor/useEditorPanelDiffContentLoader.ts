@@ -40,7 +40,11 @@ function inFlightDiffKey(
     file.diffSource === 'commit' && file.commitCompare
       ? `${file.commitCompare.parentOid ?? 'empty-tree'}..${file.commitCompare.commitOid}::${file.branchOldPath ?? ''}`
       : ''
-  return `${connectionId ?? ''}::${file.diffSource ?? ''}::${compareAgainstHead ? 'head' : 'default'}::${file.filePath}::${branch}::${commit}`
+  const snapshot =
+    file.diffSource === 'file-snapshot' && file.fileSnapshotTarget
+      ? `${file.fileSnapshotTarget.connectionId ?? 'local'}::${file.fileSnapshotTarget.workspaceId ?? file.fileSnapshotTarget.workspacePath}`
+      : ''
+  return `${connectionId ?? ''}::${file.diffSource ?? ''}::${compareAgainstHead ? 'head' : 'default'}::${file.filePath}::${branch}::${commit}::${snapshot}`
 }
 
 export function useEditorPanelDiffContentLoader({
@@ -93,55 +97,80 @@ export function useEditorPanelDiffContentLoader({
         let pending = inFlightDiffReads.get(key)
         if (!pending) {
           const promise = (
-            effectiveDiffSource === 'commit'
-              ? commitCompare
-                ? getRuntimeGitCommitDiff(
-                    {
-                      settings: fileSettings,
-                      worktreeId: file.worktreeId,
-                      worktreePath,
-                      connectionId
-                    },
-                    {
-                      commitOid: commitCompare.commitOid,
-                      parentOid: commitCompare.parentOid,
-                      filePath: file.relativePath,
-                      oldPath: file.branchOldPath
-                    }
-                  )
-                : Promise.reject(new Error('Missing commit comparison for diff tab.'))
-              : effectiveDiffSource === 'branch' && branchCompare
-                ? getRuntimeGitBranchDiff(
-                    {
-                      settings: fileSettings,
-                      worktreeId: file.worktreeId,
-                      worktreePath,
-                      connectionId
-                    },
-                    {
-                      compare: {
-                        baseRef: branchCompare.baseRef,
-                        baseOid: branchCompare.baseOid!,
-                        headOid: branchCompare.headOid!,
-                        mergeBase: branchCompare.mergeBase!
+            effectiveDiffSource === 'file-snapshot'
+              ? file.fileSnapshotTarget
+                ? window.api.fileSnapshots
+                    .content({
+                      target: file.fileSnapshotTarget,
+                      relativePath: file.relativePath
+                    })
+                    .then((content): DiffContent =>
+                      content.binary
+                        ? {
+                            kind: 'binary',
+                            originalContent: content.original,
+                            modifiedContent: content.modified,
+                            originalIsBinary: true,
+                            modifiedIsBinary: true
+                          }
+                        : {
+                            kind: 'text',
+                            originalContent: content.original,
+                            modifiedContent: content.modified,
+                            originalIsBinary: false,
+                            modifiedIsBinary: false
+                          }
+                    )
+                : Promise.reject(new Error('Missing file snapshot target for diff tab.'))
+              : effectiveDiffSource === 'commit'
+                ? commitCompare
+                  ? getRuntimeGitCommitDiff(
+                      {
+                        settings: fileSettings,
+                        worktreeId: file.worktreeId,
+                        worktreePath,
+                        connectionId
                       },
-                      filePath: file.relativePath,
-                      oldPath: file.branchOldPath
-                    }
-                  )
-                : getRuntimeGitDiff(
-                    {
-                      settings: fileSettings,
-                      worktreeId: file.worktreeId,
-                      worktreePath,
-                      connectionId
-                    },
-                    {
-                      filePath: file.relativePath,
-                      staged: effectiveDiffSource === 'staged',
-                      compareAgainstHead
-                    }
-                  )
+                      {
+                        commitOid: commitCompare.commitOid,
+                        parentOid: commitCompare.parentOid,
+                        filePath: file.relativePath,
+                        oldPath: file.branchOldPath
+                      }
+                    )
+                  : Promise.reject(new Error('Missing commit comparison for diff tab.'))
+                : effectiveDiffSource === 'branch' && branchCompare
+                  ? getRuntimeGitBranchDiff(
+                      {
+                        settings: fileSettings,
+                        worktreeId: file.worktreeId,
+                        worktreePath,
+                        connectionId
+                      },
+                      {
+                        compare: {
+                          baseRef: branchCompare.baseRef,
+                          baseOid: branchCompare.baseOid!,
+                          headOid: branchCompare.headOid!,
+                          mergeBase: branchCompare.mergeBase!
+                        },
+                        filePath: file.relativePath,
+                        oldPath: file.branchOldPath
+                      }
+                    )
+                  : getRuntimeGitDiff(
+                      {
+                        settings: fileSettings,
+                        worktreeId: file.worktreeId,
+                        worktreePath,
+                        connectionId
+                      },
+                      {
+                        filePath: file.relativePath,
+                        staged: effectiveDiffSource === 'staged',
+                        compareAgainstHead
+                      }
+                    )
           ) as Promise<DiffContent>
           pending = { externalEventGeneration: options?.externalEventGeneration, promise }
           inFlightDiffReads.set(key, pending)

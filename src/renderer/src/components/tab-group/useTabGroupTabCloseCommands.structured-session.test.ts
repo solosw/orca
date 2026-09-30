@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import type * as ReactModule from 'react'
 
 const mocks = vi.hoisted(() => ({
@@ -109,11 +109,39 @@ const AGENT_TAB = {
   createdAt: 1
 }
 
+const ACP_TAB = {
+  id: 'acp-tab-1',
+  entityId: 'acp-session-1',
+  groupId: 'group-1',
+  worktreeId: 'wt-1',
+  contentType: 'acp-session' as const,
+  customAgentId: 'custom-agent',
+  label: 'My Agent',
+  customLabel: null,
+  color: null,
+  sortOrder: 0,
+  createdAt: 1
+}
+
+const acpCloseMock = vi.hoisted(() => vi.fn(async () => undefined))
+
 beforeEach(() => {
   vi.clearAllMocks()
   store.unifiedTabsByWorktree = { 'wt-1': [AGENT_TAB] }
   mocks.closeStructuredAgentSession.mockResolvedValue('closed')
   mocks.callRuntimeRpc.mockResolvedValue({ ok: true })
+  acpCloseMock.mockReset().mockResolvedValue(undefined)
+  vi.stubGlobal('window', {
+    api: {
+      acp: {
+        close: acpCloseMock
+      }
+    }
+  })
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 describe('structured agent-session close ordering', () => {
@@ -146,5 +174,20 @@ describe('structured agent-session close ordering', () => {
     closeMany([AGENT_TAB.id])
 
     expect(mocks.closeUnifiedTab).toHaveBeenCalledWith(AGENT_TAB.id)
+  })
+})
+
+describe('ACP session close', () => {
+  it('closes the ACP process when the tab is removed', () => {
+    store.unifiedTabsByWorktree = { 'wt-1': [ACP_TAB] }
+    const { closeItem } = useTabGroupTabCloseCommands({
+      worktreeId: 'wt-1',
+      groupTabs: [ACP_TAB]
+    })
+
+    closeItem(ACP_TAB.id)
+
+    expect(mocks.closeUnifiedTab).toHaveBeenCalledWith(ACP_TAB.id)
+    expect(acpCloseMock).toHaveBeenCalledWith({ sessionId: ACP_TAB.entityId })
   })
 })

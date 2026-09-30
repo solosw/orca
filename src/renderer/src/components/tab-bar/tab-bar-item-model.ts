@@ -45,7 +45,7 @@ export type TabBarItem =
       id: string
       unifiedTabId: string
       isPinned: boolean
-      data: Tab & { contentType: 'agent-session' }
+      data: Tab & { contentType: 'agent-session' | 'acp-session' }
     }
 
 export function getTabDragLabel(item: TabBarItem, generatedTitlesEnabled: boolean): string {
@@ -122,7 +122,7 @@ export function buildOrderedTabItems({
   terminalMap: Map<string, TerminalTab & { unifiedTabId?: string }>
   editorMap: Map<string, OpenFile & { tabId?: string }>
   browserMap: Map<string, BrowserTabState & { tabId?: string }>
-  agentSessionMap: Map<string, Tab & { contentType: 'agent-session' }>
+  agentSessionMap: Map<string, Tab & { contentType: 'agent-session' | 'acp-session' }>
   unifiedTabByVisibleId: Map<string, Tab>
 }): TabBarItem[] {
   const ids = reconcileTabOrder(
@@ -237,7 +237,11 @@ export function findActiveVisibleTabId(
       // Reachable only from TabGroupPanel, which passes the structured tab's own id; the store's
       // `activeTabId` names a background terminal here (cf. TerminalTitlebarTabs, which resolves
       // `getActiveTab(...)?.id` for 'simulator' and never renders agent-session items).
-      return active.activeTabType === 'agent-session' && item.id === active.activeTabId
+      // ACP sessions share the strip item but report their own visible type.
+      return (
+        (active.activeTabType === 'agent-session' || active.activeTabType === 'acp-session') &&
+        item.id === active.activeTabId
+      )
     }
     return (
       (active.activeTabType === 'editor' || active.activeTabType === 'simulator') &&

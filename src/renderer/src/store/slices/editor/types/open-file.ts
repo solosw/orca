@@ -18,10 +18,18 @@ export type DiffSource =
   | 'staged'
   | 'branch'
   | 'commit'
+  | 'file-snapshot'
   | 'combined-all'
   | 'combined-uncommitted'
   | 'combined-branch'
   | 'combined-commit'
+
+/** Workspace identity needed to reload a file-snapshot diff after the tab remounts. */
+export type FileSnapshotDiffTarget = {
+  workspacePath: string
+  workspaceId?: string
+  connectionId?: string
+}
 
 export type BranchCompareSnapshot = Pick<
   GitBranchCompareSummary,
@@ -104,6 +112,8 @@ export type OpenFile = {
   /** Hash fragment to reveal when a preview tab opens from a link (`./guide.md#setup`); kept on tab state so repeat opens can retarget it. */
   markdownPreviewAnchor?: string
   diffSource?: DiffSource
+  /** Present when `diffSource` is `file-snapshot`; used to reload content via IPC. */
+  fileSnapshotTarget?: FileSnapshotDiffTarget
   branchCompare?: BranchCompareSnapshot
   commitCompare?: CommitCompareSnapshot
   branchOldPath?: string

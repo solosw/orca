@@ -101,6 +101,8 @@ export type PersistedState = {
   /** Identity records for removed SSH targets so a re-added host can re-adopt workspaces orphaned on the old target id. */
   removedSshTargetTombstones?: RemovedSshTargetTombstone[]
   sshRemotePtyLeases: SshRemotePtyLease[]
+  /** Main-owned encrypted-at-rest SSH login passwords, keyed by SSH target id. */
+  sshPasswords?: Record<string, string>
   /** Main-owned authenticated relay recovery records; never expose through renderer settings APIs. */
   sshPtyConsumerRecoveries?: SshPtyConsumerRecovery[]
   /** Live local Claude daemon session ids; seeds the live-PTY gate so early OAuth refresh can't rotate the single-use refresh token out from under a running daemon. */

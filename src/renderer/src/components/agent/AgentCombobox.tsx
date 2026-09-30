@@ -21,6 +21,11 @@ import {
   getAgentPickerCommandValue,
   searchAgentPickerEntries
 } from '@/lib/agent-picker-search'
+import {
+  customAgentGlyph,
+  type CustomAgentPickerEntry
+} from '@/lib/custom-agent-picker-entries'
+import { AgentLetterIcon } from '@/lib/agent-icon-glyphs'
 import { cn } from '@/lib/utils'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import {
@@ -38,6 +43,21 @@ type AgentComboboxProps = {
   onValueChange: (agent: TuiAgent | null) => void
   onValueSelected?: (agent: TuiAgent | null) => void
   onOpenManageAgents?: () => void
+  /**
+   * Saved custom (ACP) agents to list after the built-ins.
+   *
+   * Why a separate prop and callback rather than widening `value` to include
+   * custom ids: three other callers (source-control dialogs, automations, session
+   * continuation) drive this combobox with a plain `TuiAgent` and have no ACP
+   * concept at all. Adding an optional channel keeps their contracts unchanged
+   * while the new-workspace composer — the one caller that can launch an ACP
+   * agent — opts in.
+   */
+  customAgents?: readonly CustomAgentPickerEntry[]
+  /** Encoded `custom:<profileId>` of the selected custom agent, or null. */
+  selectedCustomAgentId?: string | null
+  /** Fired instead of `onValueChange` when a custom agent row is picked. */
+  onCustomAgentSelect?: (entry: CustomAgentPickerEntry) => void
   /** Current saved default agent preference. Used to render a subtle "default"
    *  indicator in the list and to tell which right-click menu item is the
    *  currently-applied choice. */
@@ -153,6 +173,9 @@ export default function AgentCombobox({
   onValueChange,
   onValueSelected,
   onOpenManageAgents,
+  customAgents,
+  selectedCustomAgentId,
+  onCustomAgentSelect,
   defaultAgent,
   onSetDefault,
   triggerClassName,
@@ -175,6 +198,28 @@ export default function AgentCombobox({
     () => (value ? (agents.find((agent) => agent.id === value) ?? null) : null),
     [agents, value]
   )
+  // Why resolved from the list rather than stored: the label lives in settings, so
+  // a rename shows up on the next render instead of on the next selection.
+  const selectedCustomAgent = useMemo<CustomAgentPickerEntry | null>(
+    () =>
+      selectedCustomAgentId
+        ? (customAgents?.find((entry) => entry.id === selectedCustomAgentId) ?? null)
+        : null,
+    [customAgents, selectedCustomAgentId]
+  )
+  // Why the search only filters custom rows when a custom section exists: a
+  // caller that passes none must not see its query silently swallow results.
+  const filteredCustomAgents = useMemo(() => {
+    const entries = customAgents ?? []
+    if (!query.trim()) {
+      return entries
+    }
+    const needle = query.trim().toLowerCase()
+    return entries.filter(
+      (entry) =>
+        entry.label.toLowerCase().includes(needle) || entry.command.toLowerCase().includes(needle)
+    )
+  }, [customAgents, query])
   const selectedDefaultPreference = value ?? (allowBlankTerminal ? 'blank' : null)
   const filteredAgents = useMemo(() => searchAgentPickerEntries(agents, query), [agents, query])
   const blankMatchesQuery = useMemo(
@@ -261,6 +306,15 @@ export default function AgentCombobox({
     [onValueChange, onValueSelected]
   )
 
+  const handleSelectCustomAgent = useCallback(
+    (entry: CustomAgentPickerEntry) => {
+      setOpen(false)
+      setQuery('')
+      onCustomAgentSelect?.(entry)
+    },
+    [onCustomAgentSelect]
+  )
+
   // Why: mirror RepoCombobox's trigger-keydown handling — the button-style
   // trigger treats the current value as a confirmed selection. Plain focus does
   // not open the dropdown. Only explicit intent opens: Arrow keys open without
@@ -335,7 +389,12 @@ export default function AgentCombobox({
               )}
               data-agent-combobox-root="true"
             >
-              {selectedAgent ? (
+              {selectedCustomAgent ? (
+                <AgentIconLabel
+                  icon={<AgentLetterIcon letter={customAgentGlyph(selectedCustomAgent)} size={14} />}
+                  label={selectedCustomAgent.label}
+                />
+              ) : selectedAgent ? (
                 <AgentIconLabel
                   icon={<AgentIcon agent={selectedAgent.id} size={14} />}
                   label={selectedAgent.label}
@@ -409,6 +468,31 @@ export default function AgentCombobox({
                   label: agent.label
                 })
               )}
+              {/* Why after the built-ins: a custom agent is an agent the user
+                  added, so the list reads built-ins first, then their own. */}
+              {(customAgents?.length ?? 0) > 0 ? (
+                <div className="mt-1 border-t border-border pt-1">
+                  <div className="px-3 py-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                    {translate(
+                      'auto.components.agent.AgentCombobox.customAgents',
+                      'Custom agents'
+                    )}
+                  </div>
+                  {filteredCustomAgents.map((entry) =>
+                    renderItem({
+                      key: entry.id,
+                      itemValue: entry.id,
+                      isChecked: selectedCustomAgentId === entry.id,
+                      // Why no default marker: the saved default agent pref is a
+                      // TuiAgent today, so there is no custom default to compare.
+                      isDefault: false,
+                      onSelect: () => handleSelectCustomAgent(entry),
+                      icon: <AgentLetterIcon letter={customAgentGlyph(entry)} />,
+                      label: entry.label
+                    })
+                  )}
+                </div>
+              ) : null}
             </CommandList>
             {onOpenManageAgents ? (
               <div className="border-t border-border">

@@ -18,6 +18,7 @@ import type {
   ConflictReviewEntry,
   ConflictReviewState,
   EditorOpenTargetOptions,
+  FileSnapshotDiffTarget,
   OpenFile
 } from './open-file'
 import type { OpenFilePathRekey, RekeyOpenFilesResult } from './open-file-path-rekey'
@@ -101,6 +102,14 @@ export type EditorFilesSlice = {
     relativePath: string,
     language: string,
     staged: boolean,
+    options?: EditorOpenTargetOptions
+  ) => void
+  /** Opens a read-only snapshot-vs-disk comparison as an editor-family tab. */
+  openFileSnapshotDiff: (
+    worktreeId: string,
+    relativePath: string,
+    language: string,
+    target: FileSnapshotDiffTarget,
     options?: EditorOpenTargetOptions
   ) => void
   openBranchDiff: (

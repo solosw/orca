@@ -1,10 +1,15 @@
-import { readFile, rename, rm, writeFile, mkdir } from 'node:fs/promises'
+import { rename, rm, writeFile, mkdir, stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import type { Store } from '../persistence'
 import { requireSshFilesystemProvider } from '../providers/ssh-filesystem-dispatch'
 import { resolveAuthorizedPath } from '../ipc/filesystem-auth'
 import { listQuickOpenFiles } from '../ipc/filesystem-list-files'
 import { FileRangeReadUnsupportedError } from '../providers/filesystem-provider-contract'
+import {
+  NodeFileReadTooLargeError,
+  readNodeFileWithinLimit
+} from '../../shared/node-bounded-file-reader'
+import { FileReadCapExceededError } from '../ssh/ssh-filesystem-stream-reader'
 import { FILE_SNAPSHOT_MAX_TEXT_BYTES } from '../../shared/file-snapshot-types'
 import type { FileSnapshotTarget } from '../../shared/file-snapshot-types'
 
@@ -41,6 +46,14 @@ function isAbsentPathError(error: unknown): boolean {
   }
   const { code } = error
   return code === 'ENOENT' || code === 'ENOTDIR'
+}
+
+function isSnapshotSizeError(error: unknown): boolean {
+  if (error instanceof NodeFileReadTooLargeError || error instanceof FileReadCapExceededError) {
+    return true
+  }
+  // Older SSH relays expose the size limit as a plain Error message.
+  return error instanceof Error && /^File too large:/i.test(error.message)
 }
 
 /** A NUL byte in the head is the same probe the editor uses to call a file binary. */
@@ -81,8 +94,19 @@ export function createLocalFileSnapshotWorkspace(
     readTextFile: async (relativePath) => {
       const absolutePath = await absolutePathFor(relativePath)
       try {
-        return classifySnapshotContent(await readFile(absolutePath))
+        const stats = await stat(absolutePath)
+        if (stats.size > FILE_SNAPSHOT_MAX_TEXT_BYTES) {
+          return { kind: 'oversized' }
+        }
+        const { buffer } = await readNodeFileWithinLimit(
+          absolutePath,
+          FILE_SNAPSHOT_MAX_TEXT_BYTES
+        )
+        return classifySnapshotContent(buffer)
       } catch (error) {
+        if (error instanceof NodeFileReadTooLargeError) {
+          return { kind: 'oversized' }
+        }
         if (isAbsentPathError(error)) {
           return { kind: 'absent' }
         }
@@ -134,21 +158,12 @@ export function createSshFileSnapshotWorkspace(
       const provider = requireSshFilesystemProvider(connectionId)
       const absolutePath = absolutePathFor(relativePath)
       try {
-        // Why the range probe first: an oversized remote file must be rejected
-        // without pulling gigabytes across the relay to discover its size.
-        if (provider.readFileRange && provider.supportsFileRangeRead) {
-          const supported = await provider.supportsFileRangeRead()
-          if (supported) {
-            const probe = await provider.readFileRange(absolutePath, 0, 1)
-            if (probe.bytesRead === 0) {
-              return { kind: 'absent' }
-            }
-          }
-        } else {
-          const stats = await provider.stat(absolutePath)
-          if (stats.size > FILE_SNAPSHOT_MAX_TEXT_BYTES) {
-            return { kind: 'oversized' }
-          }
+        // Why stat first: readFile's limit is a transport safety cap, but it
+        // still throws after starting the transfer. Snapshots should skip an
+        // oversized file before allocating or transferring its contents.
+        const stats = await provider.stat(absolutePath)
+        if (stats.size > FILE_SNAPSHOT_MAX_TEXT_BYTES) {
+          return { kind: 'oversized' }
         }
         const result = await provider.readFile(absolutePath, {
           maxTextBytes: FILE_SNAPSHOT_MAX_TEXT_BYTES
@@ -158,6 +173,9 @@ export function createSshFileSnapshotWorkspace(
         }
         return classifySnapshotContent(Buffer.from(result.content, 'utf8'))
       } catch (error) {
+        if (isSnapshotSizeError(error)) {
+          return { kind: 'oversized' }
+        }
         if (error instanceof FileRangeReadUnsupportedError) {
           return { kind: 'binary' }
         }

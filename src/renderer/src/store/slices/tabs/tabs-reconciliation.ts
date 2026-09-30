@@ -122,7 +122,14 @@ export function projectWorktreeTabModelReconciliation(
     if (tab.contentType === 'browser') {
       return liveBrowserIds.has(tab.entityId)
     }
-    if (tab.contentType === 'simulator' || tab.contentType === 'agent-session') {
+    // Why the ACP case: an `acp-session` tab is backed by an event stream in this
+    // process, not by an open file, so falling through to the editor check below
+    // would prune the chat away as if its file had closed.
+    if (
+      tab.contentType === 'simulator' ||
+      tab.contentType === 'agent-session' ||
+      tab.contentType === 'acp-session'
+    ) {
       return true
     }
     return liveEditorIds.has(tab.entityId)

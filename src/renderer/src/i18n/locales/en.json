@@ -3468,7 +3468,10 @@
             "ec2adf093e": "Launch {{value0}} in a new terminal",
             "465e432ef1": "Could not build launch command for {{value0}}.",
             "e518f544b1": "No agents detected",
-            "8dea9b5cdf": "No enabled agents"
+            "8dea9b5cdf": "No enabled agents",
+            "customAgentLaunchFailed": "Could not start {{value0}} — it has no command.",
+            "customAgents": "Custom agents",
+            "launchCustomAgent": "Start {{value0}} ({{value1}})"
           },
           "RecentTabSwitcher": {
             "329638ff6f": "Switch Tab",
@@ -12168,7 +12171,8 @@
           "cancel": "Cancel",
           "save": "Save",
           "create": "Create",
-          "overridesDescription": "Leave a field untouched to inherit {{value0}}’s own setting."
+          "overridesDescription": "Leave a field untouched to inherit {{value0}}’s own setting.",
+          "commandDescription": "The executable Orca runs. It must speak ACP over stdin/stdout."
         },
         "CustomAgentsSetting": {
           "deleteTitle": "Delete \"{{value0}}\"?",
@@ -12180,7 +12184,8 @@
           "empty": "No custom agents yet. Add one to launch an agent with your own command and name.",
           "basedOn": "Based on {{value0}}",
           "edit": "Edit custom agent",
-          "remove": "Delete custom agent"
+          "remove": "Delete custom agent",
+          "protocol": "ACP"
         }
       },
       "right": {
@@ -16628,7 +16633,8 @@
           "579c768bde": "No agents match your search.",
           "48c6a5a9b4": "Search agents...",
           "9c6b59fe58": "Set as default",
-          "1b0d6965fa": "Current default"
+          "1b0d6965fa": "Current default",
+          "customAgents": "Custom agents"
         },
         "AgentSettingsDialog": {
           "50cdb57c03": "Manage AI agents, set a default, and customize commands.",
@@ -17345,6 +17351,21 @@
         "dispatchRejected": "The agent refused the “continue” message. Open the chat and send one yourself.",
         "unsupported": "This chat can’t be resumed by Orca. Open it to see where it stopped.",
         "fallback": "Orca couldn’t resume this chat. Open it to continue manually."
+      },
+      "acp": {
+        "AcpSessionPanel": {
+          "plan": "Plan",
+          "closed": "Agent stopped: {{value0}}",
+          "roleUser": "You",
+          "roleAgent": "Agent",
+          "permissionTitle": "Permission required",
+          "permissionDecline": "Decline",
+          "failedEmpty": "The agent could not be started.",
+          "empty": "Send a prompt to start the conversation.",
+          "placeholder": "Ask the agent… (Enter to send, Shift+Enter for a new line)",
+          "send": "Send",
+          "stop": "Stop"
+        }
       }
     },
     "i18n": {

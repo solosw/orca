@@ -13,6 +13,7 @@ import { createOpenFileMutations } from './actions/open-file-mutations'
 import { createRestoredEditorOwner } from './actions/restored-editor-owner'
 import { createRekeyOpenFilesAction } from './actions/rekey-open-files-action'
 import { createOpenUnstagedDiff } from './actions/open-unstaged-diff'
+import { createOpenFileSnapshotDiff } from './actions/open-file-snapshot-diff'
 import { createOpenHistoryDiff } from './actions/open-history-diff'
 import { createOpenCombinedDiff } from './actions/open-combined-diff'
 import { createOpenConflictFile } from './actions/open-conflict-file'
@@ -42,6 +43,7 @@ export const createEditorSlice: StateCreator<AppState, [], [], EditorSlice> = (s
   ...createRestoredEditorOwner(set, get),
   ...createRekeyOpenFilesAction(set, get),
   ...createOpenUnstagedDiff(set, get),
+  ...createOpenFileSnapshotDiff(set, get),
   ...createOpenHistoryDiff(set, get),
   ...createOpenCombinedDiff(set, get),
   ...createOpenConflictFile(set, get),

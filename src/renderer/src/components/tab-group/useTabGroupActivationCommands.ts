@@ -141,9 +141,18 @@ export function useTabGroupActivationCommands({
 
   const activateAgentSession = useCallback(
     (tabId: string) => {
+      const item = groupTabs.find((candidate) => candidate.id === tabId)
+      // Why not the structured-session path: an ACP tab has no host session to
+      // activate. Routing it there returns false and the click does nothing.
+      if (item?.contentType === 'acp-session') {
+        focusGroup(worktreeId, item.groupId)
+        activateTab(item.id)
+        setActiveTabType('acp-session', worktreeId)
+        return
+      }
       activateStructuredAgentSessionTab({ worktreeId, tabId })
     },
-    [worktreeId]
+    [activateTab, focusGroup, groupTabs, setActiveTabType, worktreeId]
   )
 
   return {

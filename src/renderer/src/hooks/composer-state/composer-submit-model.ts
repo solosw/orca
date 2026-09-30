@@ -88,7 +88,9 @@ export type ComposerSubmitModel = {
     workspaceNameSeed: string,
     workspaceRunContext: WorktreeCreationRequest['workspaceRunContext'],
     repoId: string,
-    selectedRepo: Repo
+    selectedRepo: Repo,
+    /** Saved custom (ACP) agent to start after the workspace exists. */
+    customAgentId?: string
   ) => Promise<void>
   prepareFullSubmit: (
     resolution: PendingSmartGitHubSubmitResolution

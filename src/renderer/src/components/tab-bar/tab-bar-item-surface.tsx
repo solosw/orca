@@ -251,7 +251,7 @@ export function renderTabBarItems({
           hasTabsToLeft={index > 0}
           isActive={
             !clientHostedRowOwnsActiveState &&
-            activeTabType === 'agent-session' &&
+            (activeTabType === 'agent-session' || activeTabType === 'acp-session') &&
             item.id === activeTabId
           }
           isPinned={item.isPinned}

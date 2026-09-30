@@ -18,7 +18,8 @@ const DIFF_SOURCE_LABELS: Record<string, string> = {
   staged: 'staged diff',
   unstaged: 'diff',
   branch: 'branch diff',
-  commit: 'commit diff'
+  commit: 'commit diff',
+  'file-snapshot': 'snapshot'
 }
 
 export function getEditorDisplayLabel(

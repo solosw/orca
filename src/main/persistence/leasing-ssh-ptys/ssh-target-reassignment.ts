@@ -7,7 +7,10 @@ import {
   migrateWorkspaceSessionSshTargetId
 } from '../../ssh/ssh-target-id-migration'
 import type { ProtectedSecretPersistence } from '../../protected-secret-persistence'
-import { sshPtyOwnerLeaseSecretSlot } from '../../protected-secret-persistence'
+import {
+  sshPasswordSecretSlot,
+  sshPtyOwnerLeaseSecretSlot
+} from '../../protected-secret-persistence'
 import {
   migrateRetirementNamespaceHostIdentity,
   sshHostIdentity
@@ -152,6 +155,11 @@ export function reassignSshTargetId(
   if (retainedRecoveries.length !== recoveries.length) {
     operations.state.sshPtyConsumerRecoveries = retainedRecoveries
     operations.protectedSecrets.removeRetainedBlob(sshPtyOwnerLeaseSecretSlot(oldTargetId))
+    carrierChanged = true
+  }
+  if (operations.state.sshPasswords && oldTargetId in operations.state.sshPasswords) {
+    delete operations.state.sshPasswords[oldTargetId]
+    operations.protectedSecrets.removeRetainedBlob(sshPasswordSecretSlot(oldTargetId))
     carrierChanged = true
   }
   let setupsChanged = false

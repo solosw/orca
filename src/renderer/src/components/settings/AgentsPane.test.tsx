@@ -687,10 +687,10 @@ describe('empty agent detection must not cost the saved default (#15256)', () =>
 
 describe('custom agents in the Agents pane', () => {
   const workProfile = {
-    id: 'work-claude',
-    label: 'Work Claude',
-    baseAgent: 'claude' as const,
-    command: '/opt/work/claude'
+    id: 'work-agent',
+    label: 'Work Agent',
+    protocol: 'acp' as const,
+    command: '/opt/work/agent'
   }
 
   it('always offers the Add Custom Agent button, even with none defined', () => {
@@ -700,12 +700,15 @@ describe('custom agents in the Agents pane', () => {
     expect(markup).toContain('Add Custom Agent')
   })
 
-  it('lists a saved custom agent with the base agent it reuses', () => {
+  it('lists a saved custom agent with its own command, not a base agent', () => {
     const markup = renderPane({ ...getDefaultSettings('/tmp'), customAgents: [workProfile] })
 
-    expect(markup).toContain('Work Claude')
-    expect(markup).toContain('Based on Claude')
-    expect(markup).toContain('/opt/work/claude')
+    expect(markup).toContain('Work Agent')
+    expect(markup).toContain('/opt/work/agent')
+    // Why the absence assertion: "Based on <agent>" is the pre-ACP model, where
+    // a custom agent was an override of a built-in one. Its disappearance is
+    // what proves the pane shows an independent agent now.
+    expect(markup).not.toContain('Based on')
   })
 
   it('offers a saved custom agent as a default choice alongside the catalog agents', () => {
@@ -717,6 +720,6 @@ describe('custom agents in the Agents pane', () => {
     })
 
     // The profile pill is the active default, so it renders pressed.
-    expect(pillMarkup(markup, 'Work Claude')).toContain('aria-pressed="true"')
+    expect(pillMarkup(markup, 'Work Agent')).toContain('aria-pressed="true"')
   })
 })

@@ -24,6 +24,12 @@ export type TabContentType =
   | 'conflict-review'
   | 'check-details'
   | 'agent-session'
+  // A conversation with a user-defined agent that Orca drives over ACP. It is a
+  // distinct kind from 'agent-session' on purpose: an agent-session is backed by
+  // a TUI process and a transcript file, while an ACP session exists only as the
+  // event stream in this process. Sharing the kind would make every reader of
+  // agent-session handle a case it has no data for.
+  | 'acp-session'
   | 'browser'
   | 'simulator'
 
@@ -31,6 +37,7 @@ export type WorkspaceVisibleTabType =
   | 'terminal'
   | 'editor'
   | 'agent-session'
+  | 'acp-session'
   | 'browser'
   | 'simulator'
 export type CtrlTabOrderMode = 'mru' | 'sequential'
@@ -40,6 +47,7 @@ export type CtrlTabOrderMode = 'mru' | 'sequential'
 export function toVisibleTabType(contentType: TabContentType): WorkspaceVisibleTabType {
   if (
     contentType === 'agent-session' ||
+    contentType === 'acp-session' ||
     contentType === 'browser' ||
     contentType === 'terminal' ||
     contentType === 'simulator'
@@ -70,6 +78,15 @@ export type Tab = {
   isPinned?: boolean // pinned tabs survive "close others"
   /** Provider backing a structured agent-session tab. */
   agentSessionAgent?: AgentType
+  /**
+   * The custom-agent profile id behind an `acp-session` tab.
+   *
+   * Why the profile id and not the command: the label, command and args all live
+   * in settings, and copying them onto the tab would freeze a snapshot that stops
+   * tracking an edit. The tab needs only enough to say which conversation this is
+   * — the session id it is talking to rides on `entityId`.
+   */
+  customAgentId?: string
   /** Why: per-tab rendering mode for coding-agent terminals. `'chat'` shows the
    *  native chat view as an overlay while the live terminal stays mounted
    *  underneath; `'terminal'` (the default for legacy/missing) shows the raw

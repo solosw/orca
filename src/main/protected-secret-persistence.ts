@@ -7,6 +7,10 @@ export const PROTECTED_SECRET_SLOT = {
   browserKagiSessionLink: 'ui.browserKagiSessionLink'
 } as const
 
+export function sshPasswordSecretSlot(targetId: string): string {
+  return `ssh.password:${targetId}`
+}
+
 export function sshPtyOwnerLeaseSecretSlot(targetId: string): string {
   return `sshPtyConsumerRecoveries.ownerLease:${targetId}`
 }

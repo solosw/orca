@@ -85,6 +85,7 @@ describe('persisted state survives a save/load round trip', () => {
     written.updateUI({ browserKagiSessionLink: 'https://kagi.com/session?t=abc' })
     written.setWorkspaceSession(session('local-tab'))
     written.setWorkspaceSession(session('remote-tab'), HOST_ID)
+    written.setSshPassword('ssh-target-1', 'correct horse battery staple')
     written.flush()
 
     const before = {
@@ -102,8 +103,13 @@ describe('persisted state survives a save/load round trip', () => {
       'cookie-é-value'
     )
     expect(bytes.toString('utf8')).not.toContain('orca-secret-slot-')
+    expect(bytes.toString('utf8')).not.toContain('correct horse battery staple')
+    expect(Buffer.from(onDisk.sshPasswords['ssh-target-1'], 'base64').toString('utf8')).toContain(
+      'correct horse battery staple'
+    )
 
     const reloaded = openStore(dataFile)
+    expect(reloaded.getSshPassword('ssh-target-1')).toBe('correct horse battery staple')
     expect(reloaded.getSettings().opencodeSessionCookie).toBe(before.settings.opencodeSessionCookie)
     expect(reloaded.getSettings().httpProxyUrl).toBe(before.settings.httpProxyUrl)
     expect(reloaded.getUI().browserKagiSessionLink).toBe(before.ui.browserKagiSessionLink)

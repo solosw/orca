@@ -1,0 +1,50 @@
+{
+  "auto": {
+    "components": {
+      "right": {
+        "sidebar": {
+          "activity": {
+            "bar": {
+              "buttons": {
+                "fileSnapshots": "File Snapshots"
+              }
+            }
+          },
+          "FileSnapshotDiffDialog": {
+            "binary": "This file is binary or too large to compare as text.",
+            "error": "Could not load the comparison: {{message}}",
+            "loading": "Loading comparison...",
+            "loadingViewer": "Loading viewer...",
+            "title": "Snapshot comparison"
+          },
+          "FileSnapshotsPanel": {
+            "accept": "Keep this change",
+            "acceptAll": "Keep All",
+            "header": "File Snapshots",
+            "loading": "Reading snapshots...",
+            "noChanges": "No changes since the snapshot",
+            "notInitialized": "No baseline yet",
+            "notInitializedHint": "Take a snapshot to track what changes from here on.",
+            "noWorkspace": "No workspace selected",
+            "refresh": "Refresh",
+            "revert": "Revert this file",
+            "revertAll": "Revert All",
+            "statusAdded": "Added",
+            "statusDeleted": "Deleted",
+            "statusModified": "Modified",
+            "takeSnapshot": "Take Snapshot"
+          },
+          "index": {
+            "0314901467": "Source Control",
+            "441733b630": "Ports",
+            "83a10e3c44": "Checks",
+            "8bc2bbc3a0": "Explorer",
+            "aiVaultSessionHistory": "Agents",
+            "folderWorkspaces": "Attached worktrees",
+            "parentPrChecks": "PR Checks"
+          }
+        }
+      }
+    }
+  }
+}

@@ -5,11 +5,19 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store'
+import {
+  getCustomAgentPickerEntries,
+  type CustomAgentPickerEntry
+} from '@/lib/custom-agent-picker-entries'
+import { normalizeCustomAgentProfiles } from '../../../../shared/custom-agent-profiles'
 import type { NewWorkspaceComposerCardProps } from './new-workspace-composer-card-props'
 
 type NewWorkspaceComposerAgentSectionProps = Pick<
   NewWorkspaceComposerCardProps,
   | 'quickAgent'
+  | 'quickCustomAgentId'
+  | 'onQuickCustomAgentChange'
   | 'onQuickAgentChange'
   | 'onOpenAgentSettings'
   | 'createDisabled'
@@ -26,6 +34,8 @@ type NewWorkspaceComposerAgentSectionProps = Pick<
 
 export function NewWorkspaceComposerAgentSection({
   quickAgent,
+  quickCustomAgentId,
+  onQuickCustomAgentChange,
   onQuickAgentChange,
   onOpenAgentSettings,
   createDisabled,
@@ -36,6 +46,13 @@ export function NewWorkspaceComposerAgentSection({
   defaultTuiAgent,
   handleSetDefaultAgent
 }: NewWorkspaceComposerAgentSectionProps): React.JSX.Element {
+  // Why: custom agents come from settings rather than detection — they are the
+  // user's own commands, so no PATH probe can decide whether one is installed.
+  const customAgents = useAppStore((state) => state.settings?.customAgents)
+  const customAgentEntries = React.useMemo<CustomAgentPickerEntry[]>(
+    () => getCustomAgentPickerEntries(normalizeCustomAgentProfiles(customAgents)),
+    [customAgents]
+  )
   return (
     <>
       <div className="min-w-0 space-y-1" data-contextual-tour-target="workspace-creation-agent">
@@ -69,6 +86,9 @@ export function NewWorkspaceComposerAgentSection({
           agents={visibleQuickAgents}
           value={quickAgent}
           onValueChange={onQuickAgentChange}
+          customAgents={customAgentEntries}
+          selectedCustomAgentId={quickCustomAgentId ?? null}
+          onCustomAgentSelect={(entry) => onQuickCustomAgentChange?.(entry.profileId)}
           onOpenManageAgents={onOpenAgentSettings}
           defaultAgent={defaultTuiAgent}
           onSetDefault={handleSetDefaultAgent}

@@ -16,6 +16,7 @@ import type {
   RateLimitsApi
 } from './api/agent-usage-api'
 import type { AiVaultApi } from './api/ai-vault-api'
+import type { AcpApi } from './api/acp-api'
 import type { AppApi, E2EApi, PlatformApi } from './api/app-api'
 import type { AutomationsApi } from './api/automation-api'
 import type { BrowserApi } from './api/browser-api'
@@ -83,6 +84,8 @@ export type PreloadApi = {
   workspaceSpace: WorkspaceSpaceApi
   workspacePorts: WorkspacePortsApi
   fileSnapshots: FileSnapshotsApi
+  /** Orca's ACP client: launches and drives user-defined ACP agents. */
+  acp: AcpApi
   pty: PtyApi
   feedback: FeedbackApi
   crashReports: CrashReportsApi

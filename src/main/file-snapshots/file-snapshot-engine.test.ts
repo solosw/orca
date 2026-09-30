@@ -107,11 +107,14 @@ describe('FileSnapshotEngine', () => {
     expect(summary.changes).toEqual([])
   })
 
-  it('captures a baseline then reports nothing changed', async () => {
-    workspace.files.set('src/a.ts', 'export const a = 1\n')
+  it('skips an oversized file without reading its contents', async () => {
+    workspace.files.set('large.bin', 'x'.repeat(1024))
+    workspace.readTextFile = async (relativePath) =>
+      relativePath === 'large.bin' ? { kind: 'oversized' } : { kind: 'absent' }
+
     const captured = await engine().capture()
-    expect(captured.initialized).toBe(true)
-    expect(captured.trackedFileCount).toBe(1)
+
+    expect(captured.trackedFileCount).toBe(0)
     expect((await engine().summary()).changes).toEqual([])
   })
 
@@ -163,9 +166,41 @@ describe('FileSnapshotEngine', () => {
     workspace.files.set('a.ts', 'a2\n')
     workspace.files.set('b.ts', 'b2\n')
 
-    await engine().acceptFile('a.ts')
-    const summary = await engine().summary()
-    expect(summary.changes.map((c) => c.relativePath)).toEqual(['b.ts'])
+    const accepted = await engine().acceptFile('a.ts')
+    // Why assert the returned summary, not a second status call: the panel
+    // applies this payload immediately, so an empty changes list would blank
+    // the sibling row until the user refreshed.
+    expect(accepted.changes.map((c) => c.relativePath)).toEqual(['b.ts'])
+    expect((await engine().summary()).changes.map((c) => c.relativePath)).toEqual(['b.ts'])
+  })
+
+  it('accepts several files in one pass and leaves unrelated changes', async () => {
+    workspace.files.set('src/a.ts', 'a1\n')
+    workspace.files.set('src/b.ts', 'b1\n')
+    workspace.files.set('root.ts', 'r1\n')
+    await engine().capture()
+    workspace.files.set('src/a.ts', 'a2\n')
+    workspace.files.set('src/b.ts', 'b2\n')
+    workspace.files.set('root.ts', 'r2\n')
+
+    const accepted = await engine().acceptFiles(['src/a.ts', 'src/b.ts', 'src/a.ts'])
+    expect(accepted.changes.map((c) => c.relativePath)).toEqual(['root.ts'])
+  })
+
+  it('reverts several files in one pass', async () => {
+    workspace.files.set('src/a.ts', 'a1\n')
+    workspace.files.set('src/b.ts', 'b1\n')
+    workspace.files.set('root.ts', 'r1\n')
+    await engine().capture()
+    workspace.files.set('src/a.ts', 'a2\n')
+    workspace.files.set('src/b.ts', 'b2\n')
+    workspace.files.set('root.ts', 'r2\n')
+
+    const reverted = await engine().revertFiles(['src/a.ts', 'src/b.ts'])
+    expect(workspace.files.get('src/a.ts')).toBe('a1\n')
+    expect(workspace.files.get('src/b.ts')).toBe('b1\n')
+    expect(workspace.files.get('root.ts')).toBe('r2\n')
+    expect(reverted.changes.map((c) => c.relativePath)).toEqual(['root.ts'])
   })
 
   it('accept-all rebaselines every change', async () => {

@@ -1,8 +1,0 @@
-=== donor ===
-  shards=0 loose=0 packs=0
-
-=== preserved ===
-  shards=256 loose=7731 packs=0
-
-C:\software\projects\orca-recovery\orca-main.git: scanned=6001 commitObjects=0
-C:\$Recycle.Bin\S-1-5-21-3298863429-323757206-1539849354-1004\$RXJIAKQ\.git: scanned=0 commitObjects=0

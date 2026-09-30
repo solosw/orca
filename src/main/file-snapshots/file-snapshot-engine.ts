@@ -6,6 +6,7 @@ import type {
 } from '../../shared/file-snapshot-types'
 import {
   hashFileSnapshotContent,
+  pruneFileSnapshotObjects,
   readFileSnapshotObject,
   writeFileSnapshotObject
 } from './file-snapshot-object-store'
@@ -69,7 +70,40 @@ function countLines(content: Buffer | null): Map<string, number> {
   return counts
 }
 
-export type FileSnapshotEngineDependencies = {
+const FILE_SNAPSHOT_CAPTURE_CONCURRENCY = 8
+
+function uniqueRelativePaths(relativePaths: readonly string[]): string[] {
+  const seen = new Set<string>()
+  const unique: string[] = []
+  for (const relativePath of relativePaths) {
+    if (seen.has(relativePath)) continue
+    seen.add(relativePath)
+    unique.push(relativePath)
+  }
+  return unique
+}
+
+async function mapWithConcurrency<T, R>(
+  values: readonly T[], concurrency: number,
+  operation: (value: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(values.length)
+  let nextIndex = 0
+  const worker = async (): Promise<void> => {
+    while (true) {
+      const index = nextIndex++
+      if (index >= values.length) return
+      results[index] = await operation(values[index])
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, values.length) }, () => worker())
+  )
+  return results
+}
+
+
+type FileSnapshotEngineDependencies = {
   workspace: FileSnapshotWorkspace
   workspaceDir: string
 }
@@ -113,28 +147,59 @@ export class FileSnapshotEngine {
    */
   async capture(): Promise<FileSnapshotSummary> {
     const trackedFiles = await this.dependencies.workspace.listTrackedFiles()
-    const files: Record<string, string> = {}
-    for (const relativePath of trackedFiles) {
-      const read = await this.dependencies.workspace.readTextFile(relativePath)
-      if (read.kind !== 'text') {
-        continue
+    const captured = await mapWithConcurrency(
+      trackedFiles,
+      FILE_SNAPSHOT_CAPTURE_CONCURRENCY,
+      async (relativePath) => {
+        const read = await this.dependencies.workspace.readTextFile(relativePath)
+        if (read.kind !== 'text') return null
+        return { relativePath, hash: await this.storeObject(read.content) }
       }
-      files[relativePath] = await this.storeObject(read.content)
+    )
+    const files: Record<string, string> = {}
+    for (const item of captured) {
+      if (item) files[item.relativePath] = item.hash
     }
-    return this.writeManifest({ version: 1, capturedAt: Date.now(), files })
+    const manifest = { version: 1 as const, capturedAt: Date.now(), files }
+    await this.persistManifest(manifest)
+    await pruneFileSnapshotObjects(this.dependencies.workspaceDir, new Set(Object.values(files)))
+    // Full rebaseline: every tracked path now matches the store, so there is
+    // nothing left to list. Avoid a second workspace scan that summary() would do.
+    return {
+      initialized: true,
+      capturedAt: manifest.capturedAt,
+      trackedFileCount: Object.keys(files).length,
+      changes: []
+    }
+  }
+
+  async rebuild(): Promise<FileSnapshotSummary> {
+    return this.capture()
   }
 
   /** Promotes one file's current content to the baseline, leaving siblings alone. */
   async acceptFile(relativePath: string): Promise<FileSnapshotSummary> {
+    return this.acceptFiles([relativePath])
+  }
+
+  /**
+   * Promotes several paths in one manifest write. Why batch: accepting a folder
+   * would otherwise rewrite the manifest and re-scan the workspace once per file,
+   * and the panel would flicker through intermediate summaries.
+   */
+  async acceptFiles(relativePaths: readonly string[]): Promise<FileSnapshotSummary> {
     const manifest = await this.requireManifest()
-    const read = await this.dependencies.workspace.readTextFile(relativePath)
-    if (read.kind !== 'text') {
-      // Gone from disk: accept the deletion rather than keep a stale baseline.
-      delete manifest.files[relativePath]
-    } else {
-      manifest.files[relativePath] = await this.storeObject(read.content)
+    const uniquePaths = uniqueRelativePaths(relativePaths)
+    for (const relativePath of uniquePaths) {
+      const read = await this.dependencies.workspace.readTextFile(relativePath)
+      if (read.kind !== 'text') {
+        // Gone from disk: accept the deletion rather than keep a stale baseline.
+        delete manifest.files[relativePath]
+      } else {
+        manifest.files[relativePath] = await this.storeObject(read.content)
+      }
     }
-    return this.writeManifest({ ...manifest, capturedAt: Date.now() })
+    return this.persistManifestAndSummarize({ ...manifest, capturedAt: Date.now() })
   }
 
   async acceptAll(): Promise<FileSnapshotSummary> {
@@ -148,17 +213,15 @@ export class FileSnapshotEngine {
    * empty file would leave a stray artifact the agent never wrote.
    */
   async revertFile(relativePath: string): Promise<FileSnapshotSummary> {
+    return this.revertFiles([relativePath])
+  }
+
+  async revertFiles(relativePaths: readonly string[]): Promise<FileSnapshotSummary> {
     const manifest = await this.requireManifest()
-    const hash = manifest.files[relativePath]
-    if (hash === undefined) {
-      await this.dependencies.workspace.deleteFile(relativePath)
-      return this.summary()
+    const uniquePaths = uniqueRelativePaths(relativePaths)
+    for (const relativePath of uniquePaths) {
+      await this.restorePathFromManifest(manifest, relativePath)
     }
-    const content = await readFileSnapshotObject(this.dependencies.workspaceDir, hash)
-    if (content === null) {
-      throw new Error(`Snapshot content for ${relativePath} is missing from the store`)
-    }
-    await this.dependencies.workspace.writeTextFile(relativePath, content)
     return this.summary()
   }
 
@@ -167,7 +230,7 @@ export class FileSnapshotEngine {
     const trackedFiles = await this.dependencies.workspace.listTrackedFiles()
     const changes = await this.computeChanges(manifest, trackedFiles)
     for (const change of changes) {
-      await this.revertFile(change.relativePath)
+      await this.restorePathFromManifest(manifest, change.relativePath)
     }
     return this.summary()
   }
@@ -197,14 +260,34 @@ export class FileSnapshotEngine {
     return hash
   }
 
-  private async writeManifest(manifest: FileSnapshotManifest): Promise<FileSnapshotSummary> {
+  private async persistManifest(manifest: FileSnapshotManifest): Promise<void> {
     await writeFileSnapshotManifest(this.dependencies.workspaceDir, manifest)
-    return {
-      initialized: true,
-      capturedAt: manifest.capturedAt,
-      trackedFileCount: Object.keys(manifest.files).length,
-      changes: []
+  }
+
+  private async persistManifestAndSummarize(
+    manifest: FileSnapshotManifest
+  ): Promise<FileSnapshotSummary> {
+    await this.persistManifest(manifest)
+    // Why recompute changes instead of returning []: acceptFile only updates
+    // some paths. Returning an empty list made the panel claim "no changes"
+    // until the user hit refresh, even though siblings were still dirty.
+    return this.summary()
+  }
+
+  private async restorePathFromManifest(
+    manifest: FileSnapshotManifest,
+    relativePath: string
+  ): Promise<void> {
+    const hash = manifest.files[relativePath]
+    if (hash === undefined) {
+      await this.dependencies.workspace.deleteFile(relativePath)
+      return
     }
+    const content = await readFileSnapshotObject(this.dependencies.workspaceDir, hash)
+    if (content === null) {
+      throw new Error(`Snapshot content for ${relativePath} is missing from the store`)
+    }
+    await this.dependencies.workspace.writeTextFile(relativePath, content)
   }
 
   private async requireManifest(): Promise<FileSnapshotManifest> {
@@ -221,8 +304,15 @@ export class FileSnapshotEngine {
   ): Promise<FileSnapshotChange[]> {
     const tracked = new Set(trackedFiles)
     const changes: FileSnapshotChange[] = []
-    for (const relativePath of trackedFiles) {
-      const read = await this.dependencies.workspace.readTextFile(relativePath)
+    const currentResults = await mapWithConcurrency(
+      trackedFiles,
+      FILE_SNAPSHOT_CAPTURE_CONCURRENCY,
+      async (relativePath) => ({
+        relativePath,
+        read: await this.dependencies.workspace.readTextFile(relativePath)
+      })
+    )
+    for (const { relativePath, read } of currentResults) {
       const hash = manifest.files[relativePath]
       if (hash === undefined) {
         if (read.kind !== 'text') {
@@ -232,10 +322,15 @@ export class FileSnapshotEngine {
         changes.push({ relativePath, status: 'added', additions, deletions: 0 })
         continue
       }
-      if (read.kind !== 'text') {
+      if (read.kind === 'absent') {
         // Unreadable now but recorded before. Report as deleted rather than
         // modified: offering a revert is only safe when the file is gone.
         changes.push({ relativePath, status: 'deleted', additions: 0, deletions: 0 })
+        continue
+      }
+      if (read.kind !== 'text') {
+        // Binary and oversized files are outside the text snapshot boundary.
+        // Do not report them as deleted or modified just because they cannot be read.
         continue
       }
       if (hashFileSnapshotContent(read.content) === hash) {
@@ -245,13 +340,17 @@ export class FileSnapshotEngine {
       const { additions, deletions } = countFileSnapshotLineChanges(snapshotContent, read.content)
       changes.push({ relativePath, status: 'modified', additions, deletions })
     }
-    for (const [relativePath, hash] of Object.entries(manifest.files)) {
-      if (tracked.has(relativePath)) {
-        continue
-      }
+    const deletedResults = await mapWithConcurrency(
+      Object.entries(manifest.files).filter(([relativePath]) => !tracked.has(relativePath)),
+      FILE_SNAPSHOT_CAPTURE_CONCURRENCY,
+      async ([relativePath, hash]) => ({
+        relativePath,
+        snapshotContent: await readFileSnapshotObject(this.dependencies.workspaceDir, hash)
+      })
+    )
+    for (const { relativePath, snapshotContent } of deletedResults) {
       // Why the deletion count comes from the snapshot rather than a re-read:
       // the file is gone, so its recorded line count is the only honest source.
-      const snapshotContent = await readFileSnapshotObject(this.dependencies.workspaceDir, hash)
       const { deletions } = countFileSnapshotLineChanges(snapshotContent, null)
       changes.push({ relativePath, status: 'deleted', additions: 0, deletions })
     }

@@ -1,33 +1,43 @@
-import type { TuiAgent } from './tui-agent'
-import { isTuiAgent } from './tui-agent-config'
+import { ACP_MAX_LAUNCH_ARGS_LENGTH, ACP_MAX_LAUNCH_COMMAND_LENGTH } from './acp-types'
 
 /** How many custom agents a user may define; keeps the Agents pane and pickers bounded. */
 export const MAX_CUSTOM_AGENT_PROFILES = 40
 export const MAX_CUSTOM_AGENT_LABEL_LENGTH = 60
-export const MAX_CUSTOM_AGENT_COMMAND_LENGTH = 4000
-export const MAX_CUSTOM_AGENT_ARGS_LENGTH = 4000
+export const MAX_CUSTOM_AGENT_COMMAND_LENGTH = ACP_MAX_LAUNCH_COMMAND_LENGTH
+export const MAX_CUSTOM_AGENT_ARGS_LENGTH = ACP_MAX_LAUNCH_ARGS_LENGTH
 export const MAX_CUSTOM_AGENT_ENV_ENTRIES = 64
 export const MAX_CUSTOM_AGENT_ENV_NAME_LENGTH = 200
 export const MAX_CUSTOM_AGENT_ENV_VALUE_LENGTH = 4000
 
+/** How Orca talks to a custom agent. ACP over stdio is the only supported transport. */
+export type CustomAgentProtocol = 'acp'
+
 /**
- * A user-defined agent that reuses an existing agent's behavior.
+ * A user-defined agent that Orca launches and drives directly.
  *
- * The base agent stays authoritative for everything Orca must know structurally —
- * prompt injection, readiness detection, trust preflight — so a custom agent needs
- * no new entry in the `TuiAgent` union. The profile only supplies a label and the
- * launch overrides that would otherwise live in per-agent settings.
+ * Why this does NOT reference another agent: a custom agent ships its own
+ * binary and speaks ACP (Agent Client Protocol) over stdio, so Orca is only the
+ * client. Nothing about it derives from a built-in `TuiAgent` — the command
+ * below *is* the agent. That is what makes it a first-class choice rather than a
+ * relabelled override of an existing one.
  */
 export type CustomAgentProfile = {
   id: string
   label: string
-  /** Existing agent whose launch/readiness behavior this profile reuses. */
-  baseAgent: TuiAgent
-  /** Replaces the base agent's binary/command; omitted means "use the base agent's command". */
-  command?: string
-  /** Replaces the configured default arguments for this launch. */
+  /** Wire protocol the command speaks. Explicit so a future protocol is additive. */
+  protocol: CustomAgentProtocol
+  /** Command that starts the agent. Resolved by the host like any other agent binary. */
+  command: string
+  /** Arguments passed to the command, as a single shell-like string. */
   args?: string
-  /** Extra environment for this launch, merged over the base agent's configured environment. */
+  /** Extra environment for this launch, merged over the inherited environment. */
+  env?: Record<string, string>
+}
+
+/** What the ACP session needs to start this agent. */
+export type CustomAgentAcpLaunch = {
+  command: string
+  args?: readonly string[]
   env?: Record<string, string>
 }
 
@@ -37,13 +47,6 @@ export function getDefaultCustomAgentProfiles(): CustomAgentProfile[] {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/** The launch overrides a profile contributes, ready to feed the startup-plan inputs. */
-export type CustomAgentLaunchOverrides = {
-  command?: string
-  args?: string
-  env?: Record<string, string>
 }
 
 function normalizeCustomAgentEnv(input: unknown): Record<string, string> | undefined {
@@ -78,9 +81,11 @@ function normalizeOptionalText(value: unknown, maxLength: number): string | unde
 /**
  * Coerces persisted custom agents into a bounded, well-formed list.
  *
- * Why drop a row instead of repairing it: a profile whose base agent is unknown (written by a
- * build that shipped an agent this one does not have) or whose label is empty cannot launch
- * anything meaningful, and keeping it would surface an unusable row in the Agents pane.
+ * Why a profile without a command is dropped rather than repaired: the command
+ * is what makes the agent an agent. A row missing it can launch nothing, and
+ * keeping it would surface an unusable entry in the Agents pane. This also
+ * retires pre-ACP rows, which were overrides of a built-in agent rather than
+ * agents in their own right — they have no command of their own to run.
  */
 export function normalizeCustomAgentProfiles(input: unknown): CustomAgentProfile[] {
   if (!Array.isArray(input)) {
@@ -97,15 +102,15 @@ export function normalizeCustomAgentProfiles(input: unknown): CustomAgentProfile
     if (!isRecord(item)) {
       continue
     }
-    const record = item
-    if (!isTuiAgent(record.baseAgent)) {
-      continue
-    }
-    const label = normalizeOptionalText(record.label, MAX_CUSTOM_AGENT_LABEL_LENGTH)
+    const label = normalizeOptionalText(item.label, MAX_CUSTOM_AGENT_LABEL_LENGTH)
     if (!label) {
       continue
     }
-    const rawId = normalizeOptionalText(record.id, MAX_CUSTOM_AGENT_LABEL_LENGTH)
+    const command = normalizeOptionalText(item.command, MAX_CUSTOM_AGENT_COMMAND_LENGTH)
+    if (!command) {
+      continue
+    }
+    const rawId = normalizeOptionalText(item.id, MAX_CUSTOM_AGENT_LABEL_LENGTH)
     const idBase = rawId || `custom-agent-${normalized.length + 1}`
     let id = idBase
     let suffix = 2
@@ -115,15 +120,16 @@ export function normalizeCustomAgentProfiles(input: unknown): CustomAgentProfile
     }
     seenIds.add(id)
 
-    const command = normalizeOptionalText(record.command, MAX_CUSTOM_AGENT_COMMAND_LENGTH)
-    const args = normalizeOptionalText(record.args, MAX_CUSTOM_AGENT_ARGS_LENGTH)
-    const env = normalizeCustomAgentEnv(record.env)
+    const args = normalizeOptionalText(item.args, MAX_CUSTOM_AGENT_ARGS_LENGTH)
+    const env = normalizeCustomAgentEnv(item.env)
 
     normalized.push({
       id,
       label,
-      baseAgent: record.baseAgent,
-      ...(command ? { command } : {}),
+      // Stored rows predating the protocol field are ACP by definition; a
+      // future protocol must be written explicitly.
+      protocol: 'acp',
+      command,
       ...(args ? { args } : {}),
       ...(env ? { env } : {})
     })
@@ -142,50 +148,93 @@ export function findCustomAgentProfile(
   return profiles.find((profile) => profile.id === id) ?? null
 }
 
-/** True when the profile actually changes anything about how the base agent launches. */
-export function customAgentProfileHasLaunchOverrides(profile: CustomAgentProfile): boolean {
-  return Boolean(profile.command || profile.args || profile.env)
+/**
+ * Splits an argument string into argv.
+ *
+ * Why a splitter rather than passing the whole string through: the spawn
+ * chokepoint forbids `shell: true`, so a single string would otherwise reach
+ * the agent as one argument. Quotes group, and a backslash escapes the next
+ * character inside them — enough for real agent flags, and no attempt at full
+ * shell syntax (which the process never sees).
+ */
+export function splitCustomAgentArgs(args: string | undefined): string[] {
+  if (!args) {
+    return []
+  }
+  const out: string[] = []
+  let current = ''
+  let quote: '"' | "'" | null = null
+  let started = false
+
+  for (let index = 0; index < args.length; index += 1) {
+    const char = args[index]
+    if (char === '\\' && quote && index + 1 < args.length) {
+      current += args[index + 1]
+      index += 1
+      started = true
+      continue
+    }
+    if (quote) {
+      if (char === quote) {
+        quote = null
+      } else {
+        current += char
+      }
+      started = true
+      continue
+    }
+    if (char === '"' || char === "'") {
+      quote = char
+      started = true
+      continue
+    }
+    if (char === ' ' || char === '\t' || char === '\n') {
+      if (started) {
+        out.push(current)
+        current = ''
+        started = false
+      }
+      continue
+    }
+    current += char
+    started = true
+  }
+  if (started) {
+    out.push(current)
+  }
+  return out
 }
 
-export function getCustomAgentLaunchOverrides(
+/** The launch descriptor for a profile, or null when it has no command. */
+export function getCustomAgentAcpLaunch(
   profile: CustomAgentProfile | null | undefined
-): CustomAgentLaunchOverrides | null {
-  if (!profile) {
+): CustomAgentAcpLaunch | null {
+  if (!profile || !profile.command.trim()) {
     return null
   }
-  const overrides: CustomAgentLaunchOverrides = {
-    ...(profile.command ? { command: profile.command } : {}),
-    ...(profile.args ? { args: profile.args } : {}),
+  const args = splitCustomAgentArgs(profile.args)
+  return {
+    command: profile.command,
+    ...(args.length > 0 ? { args } : {}),
     ...(profile.env ? { env: profile.env } : {})
   }
-  return Object.keys(overrides).length > 0 ? overrides : null
 }
 
-/** The settings slice that decides whether a launch is the user's custom default agent. */
+/** The settings slice that names the user's chosen custom agent. */
 export type CustomAgentDefaultSettings = {
   defaultCustomAgentId?: string | null
-  defaultTuiAgent?: TuiAgent | 'blank' | null
   customAgents?: CustomAgentProfile[]
 }
 
 /**
- * The overrides to merge into a launch of `agent`, or null when this launch is not the
- * user's default custom agent.
+ * The custom agent a launch should use, or null when the launch is not for one.
  *
- * A custom agent is a *default-only* choice: `defaultTuiAgent` still stores the profile's base
- * agent, so every icon, picker, and detection reader keeps working off the closed `TuiAgent`
- * union. Only the launch path needs to know the profile exists, which is this lookup.
- *
- * Known limitation: this keys off the default preference, not the caller's intent, so an
- * explicit re-pick of the base agent also picks up the profile's overrides.
+ * Unlike the pre-ACP model, this does not key off a base agent: a custom agent
+ * is selected by id alone, so two profiles can never collide over the same
+ * built-in agent, and none of them is constrained by one.
  */
-export function resolveCustomAgentLaunchOverrides(
-  settings: CustomAgentDefaultSettings | null | undefined,
-  agent: TuiAgent
-): CustomAgentLaunchOverrides | null {
-  const profile = findCustomAgentProfile(settings?.customAgents, settings?.defaultCustomAgentId)
-  if (!profile || profile.baseAgent !== agent) {
-    return null
-  }
-  return getCustomAgentLaunchOverrides(profile)
+export function resolveCustomAgentProfile(
+  settings: CustomAgentDefaultSettings | null | undefined
+): CustomAgentProfile | null {
+  return findCustomAgentProfile(settings?.customAgents, settings?.defaultCustomAgentId)
 }

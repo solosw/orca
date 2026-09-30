@@ -19,6 +19,7 @@ import {
   toFolderWorkspaceLinkedTask
 } from './folder-workspace-composer-helpers'
 import { planAgentSessionLaunch } from '@/lib/agent-session-launch-plan'
+import { startRequestedCustomAgent } from '@/lib/worktree-creation-custom-agent-start'
 import { beginStructuredAgentSessionProvisionalLaunch } from '@/lib/structured-agent-session-provisional-tab'
 import { getNewWorkspaceProjectGroupHostId } from '@/lib/new-workspace-project-options'
 import { useAppStore } from '@/store'
@@ -52,6 +53,8 @@ type SubmitFolderWorkspaceCreateParams = {
   linkedTaskSourceContext?: TaskSourceContext | null
   note: string
   quickAgent: TuiAgent | null
+  /** Saved custom (ACP) agent to start once the folder workspace exists. */
+  quickCustomAgentId?: string | null
   autoRenameBranchFromWork: boolean | undefined
   agentCmdOverrides: Record<string, string> | undefined
   agentArgs?: string | null
@@ -73,6 +76,7 @@ export async function submitFolderWorkspaceCreate({
   linkedTaskSourceContext,
   note,
   quickAgent,
+  quickCustomAgentId,
   autoRenameBranchFromWork,
   agentCmdOverrides,
   agentArgs,
@@ -214,6 +218,10 @@ export async function submitFolderWorkspaceCreate({
         agent: quickAgent,
         ...(!structuredLaunch && startup ? { startup } : {}),
         ...(structuredLaunch ? { providesInitialSurface: true } : {}),
+        // Why: a custom agent's own conversation tab is this workspace's initial
+        // surface, so the create must not seed a blank shell beside it. `quickAgent`
+        // stays null for a custom agent, so naming the surface here is the only signal.
+        ...(quickCustomAgentId ? { providesInitialSurface: true } : {}),
         runtimeEnvironmentId
       })
       return activationHolder.value !== false
@@ -230,6 +238,24 @@ export async function submitFolderWorkspaceCreate({
       revealWorkspace()
     }
     const activation = activationHolder.value
+    // Why here: the folder workspace exists with its final path at this point, and
+    // the ACP agent needs that path as its cwd. Everything above ran unchanged —
+    // selecting a custom agent leaves `quickAgent` null, so the create was a blank
+    // one and only this step differs.
+    if (quickCustomAgentId) {
+      try {
+        startRequestedCustomAgent({
+          request: { customAgentId: quickCustomAgentId },
+          worktreeId: folderWorkspaceKey(workspace.id),
+          worktreePath: workspace.folderPath,
+          connectionId: workspace.connectionId ?? projectGroup.connectionId ?? null
+        })
+      } catch (error) {
+        // Why best-effort: the workspace was created successfully, so failing to
+        // open the agent's tab must not read as a create failure.
+        console.error('folder workspace: custom agent start failed', workspace.id, error)
+      }
+    }
     if (
       !structuredLaunchAccepted &&
       quickAgent &&

@@ -9,6 +9,7 @@ import { agentHookServer } from '../agent-hooks/server'
 import { wslHookRelayManager } from '../agent-hooks/wsl-hook-relay-manager'
 import { removeManagedAgentHooksAsync } from '../agent-hooks/managed-agent-hook-controls'
 import { stopStructuredAgentSessionRuntime } from '../runtime/structured-agent-session-runtime'
+import { shutdownAcpSessions } from '../ipc/acp'
 import { setStructuredAgentSessionTeardownTrigger } from '../runtime/structured-agent-session-runtime-teardown'
 import { awaitRuntimeFileWatcherUnsubscribes } from '../runtime/orca-runtime-files'
 import { clearRuntimeMetadataIfOwned } from '../runtime/runtime-metadata'
@@ -138,6 +139,9 @@ function installWillQuitHandler(): void {
     // went away, and an update install is a restart the user never chose.
     setStructuredAgentSessionTeardownTrigger(updateQuitInProgress ? 'update' : 'quit')
     const structuredAgentSessionShutdown = stopStructuredAgentSessionRuntime()
+    // Why: ACP agents are child processes Orca parents; a quit that skipped this
+    // would leave each one running with no client on the other end of its stdio.
+    const acpSessionShutdown = shutdownAcpSessions()
     state.pluginService = null
     setUnreadDockBadgeCount(0)
     // Why wait rather than kill: the child finishes fine orphaned, and signalling
@@ -250,6 +254,7 @@ function installWillQuitHandler(): void {
       { name: 'ref-maintenance', promise: refMaintenanceShutdown },
       { name: 'codex-backfill-recovery', promise: codexBackfillRecoveryShutdown },
       { name: 'structured-agent-session', promise: structuredAgentSessionShutdown },
+      { name: 'acp-sessions', promise: acpSessionShutdown },
       { name: 'usage-cache', promise: usageCacheFlush },
       { name: 'stats', promise: statsFlush },
       { name: 'state', promise: storeFlush }

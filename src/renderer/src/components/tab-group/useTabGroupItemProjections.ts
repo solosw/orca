@@ -22,7 +22,9 @@ export type TabGroupWorktreeSnapshot = {
 
 export type GroupEditorItem = OpenFile & { tabId: string }
 export type GroupBrowserItem = BrowserTabState & { tabId: string }
-export type GroupAgentSessionItem = Tab & { contentType: 'agent-session' }
+export type GroupAgentSessionItem = Tab & {
+  contentType: 'agent-session' | 'acp-session'
+}
 
 type TerminalTabItem = TerminalTab & { unifiedTabId: string }
 
@@ -134,7 +136,8 @@ export function useTabGroupItemProjections({
   const agentSessionItems = useMemo<GroupAgentSessionItem[]>(
     () =>
       groupTabs.filter(
-        (item): item is GroupAgentSessionItem => item.contentType === 'agent-session'
+        (item): item is GroupAgentSessionItem =>
+          item.contentType === 'agent-session' || item.contentType === 'acp-session'
       ),
     [groupTabs]
   )

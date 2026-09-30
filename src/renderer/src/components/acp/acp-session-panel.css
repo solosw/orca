@@ -1,0 +1,481 @@
+.acp-panel {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, var(--app-font-family, sans-serif));
+}
+
+.acp-plan,
+.acp-work-panel,
+.acp-usage {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.acp-plan {
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--muted) 48%, var(--background));
+}
+
+.acp-plan-title {
+  margin-bottom: 4px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.acp-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.acp-plan-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  color: var(--foreground);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.acp-plan-index,
+.acp-plan-status {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.acp-plan-index {
+  width: 16px;
+  text-align: right;
+}
+
+.acp-plan-content {
+  min-width: 0;
+  flex: 1 1 auto;
+  /* Same reason as `.acp-message`: `anywhere` lets this flex item's
+     min-content width fall to one character. */
+  overflow-wrap: break-word;
+}
+
+.acp-work-panel {
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--muted) 48%, var(--background));
+}
+
+.acp-work-header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.acp-work-header-row .acp-work-header {
+  flex: 1 1 auto;
+}
+
+.acp-work-clear {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.acp-work-clear:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.acp-work-clear svg {
+  width: 14px;
+  height: 14px;
+}
+
+
+.acp-work-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.acp-work-count {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.acp-work-chevron {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.acp-work-panel.is-collapsed {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+
+.acp-work-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.acp-work-dot.is-active {
+  background: #d97706;
+  animation: acp-pulse 1.25s ease-in-out infinite;
+}
+
+.acp-work-dot.is-done {
+  background: #16a34a;
+}
+
+.acp-work-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 180px;
+  margin-top: 7px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.acp-work-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.acp-work-item-name {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono, monospace);
+}
+
+.acp-work-item-status {
+  flex: 0 0 auto;
+}
+
+.acp-usage {
+  padding: 4px 12px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  text-align: right;
+}
+
+.acp-transcript-slot {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+
+.acp-transcript-shell {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 0;
+}
+
+.acp-transcript {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 34%, transparent) transparent;
+}
+
+.acp-transcript::-webkit-scrollbar {
+  width: 10px;
+}
+
+.acp-transcript::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.acp-transcript::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--muted-foreground) 30%, transparent);
+  background-clip: padding-box;
+}
+
+.acp-events {
+  display: flex;
+  box-sizing: border-box;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 860px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 24px 32px 24px 16px;
+}
+
+.acp-events > [id^='acp-event-'] {
+  width: 100%;
+  min-width: 0;
+}
+
+.acp-message-row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.acp-message-row.is-user {
+  justify-content: flex-end;
+}
+
+.acp-message-row.is-assistant {
+  justify-content: flex-start;
+}
+
+.acp-message {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 14px;
+  line-height: 1.65;
+  /* Why not `overflow-wrap: anywhere`: it lets a flex item's min-content width
+     shrink to one character, which collapsed assistant prose into a 1-char
+     column in a narrow pane. `break-word` still wraps a long token without
+     giving up that floor. */
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.acp-message-user {
+  width: auto;
+  max-width: min(85%, 720px);
+  padding: 10px 14px;
+  border-radius: 9px 9px 3px 9px;
+  background: var(--muted);
+  color: var(--foreground);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.acp-message-assistant > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.acp-message-assistant {
+  width: 100%;
+  color: var(--foreground);
+}
+
+.acp-message-assistant p:first-child {
+  margin-top: 0;
+}
+
+.acp-message-assistant p:last-child {
+  margin-bottom: 0;
+}
+
+.acp-plain-text {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.acp-media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.acp-media-list img,
+.acp-media-list video {
+  max-width: 100%;
+  max-height: 288px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.acp-media-list audio {
+  max-width: 100%;
+}
+
+.acp-media-list a {
+  color: var(--primary);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.acp-thought {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--muted) 48%, var(--background));
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.acp-thought-summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.acp-thought-body {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  font-family: var(--font-sans, sans-serif);
+  line-height: 1.55;
+}
+
+.acp-tool-call {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--muted) 48%, var(--background));
+}
+
+.acp-tool-call-summary {
+  cursor: pointer;
+  list-style-position: inside;
+  user-select: none;
+}
+
+.acp-tool-call[open] .acp-tool-call-summary {
+  margin-bottom: 4px;
+}
+
+.acp-tool-call-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--foreground);
+  font-size: 12px;
+}
+
+.acp-tool-call-name {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono, monospace);
+}
+
+.acp-tool-call-status,
+.acp-tool-call-detail,
+.acp-closed-event {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.acp-tool-call-status {
+  flex: 0 0 auto;
+}
+
+.acp-tool-call-value {
+  margin-top: 8px;
+  min-width: 0;
+}
+
+.acp-tool-call-value-label {
+  margin-bottom: 3px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.acp-tool-call-value pre {
+  max-width: 100%;
+  margin: 0;
+  padding: 6px 8px;
+  overflow-x: auto;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--background) 70%, var(--muted));
+  color: var(--foreground);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+
+.acp-closed-event {
+  text-align: center;
+}
+
+.acp-composer-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 0;
+  background: var(--background);
+}
+
+@keyframes acp-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acp-work-dot.is-active {
+    animation: none;
+  }
+}

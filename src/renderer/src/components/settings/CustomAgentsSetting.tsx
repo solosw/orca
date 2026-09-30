@@ -6,7 +6,6 @@ import {
   normalizeCustomAgentProfiles,
   type CustomAgentProfile
 } from '../../../../shared/custom-agent-profiles'
-import { getAgentLabel } from '@/lib/agent-catalog'
 import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
 import { Button } from '../ui/button'
 import { SettingsBadge, SettingsSubsectionHeader } from './SettingsFormControls'
@@ -16,19 +15,14 @@ import { translate } from '@/i18n/i18n'
 type EditorState = { mode: 'add' | 'edit'; profile: CustomAgentProfile } | null
 
 /**
- * Where a profile's overrides are summarized under its name.
+ * The command line shown under a profile's name.
  *
- * Prefers the command, since that is what a user most often changes; falling back to the base
- * agent's label keeps a profile that only re-labels an agent from rendering an empty row.
+ * Why the command is the only source: a custom agent is defined by the process
+ * it starts, so that line *is* the profile's identity. There is no base agent
+ * to fall back to any more.
  */
 export function describeCustomAgentProfile(profile: CustomAgentProfile): string {
-  if (profile.command) {
-    return profile.args ? `${profile.command} ${profile.args}` : profile.command
-  }
-  if (profile.args) {
-    return profile.args
-  }
-  return getAgentLabel(profile.baseAgent)
+  return profile.args ? `${profile.command} ${profile.args}` : profile.command
 }
 
 export function CustomAgentsSetting({
@@ -85,7 +79,7 @@ export function CustomAgentsSetting({
         }
         description={translate(
           'auto.components.settings.CustomAgentsSetting.description',
-          'Give an agent a custom name and launch command, reusing the behavior of an existing agent.'
+          'Add an agent by giving Orca the command that starts it. Orca drives it over ACP.'
         )}
         action={
           <Button
@@ -119,9 +113,8 @@ export function CustomAgentsSetting({
                   <span className="truncate text-sm font-medium leading-none">{profile.label}</span>
                   <SettingsBadge tone="muted">
                     {translate(
-                      'auto.components.settings.CustomAgentsSetting.basedOn',
-                      'Based on {{value0}}',
-                      { value0: getAgentLabel(profile.baseAgent) }
+                      'auto.components.settings.CustomAgentsSetting.protocol',
+                      'ACP'
                     )}
                   </SettingsBadge>
                 </div>

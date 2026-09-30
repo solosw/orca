@@ -35,6 +35,17 @@ export type NewWorkspaceComposerCardProps = {
   onComposerNodeChange?: (node: HTMLDivElement | null) => void
   nameInputRef?: React.RefObject<HTMLInputElement | null>
   quickAgent: TuiAgent | null
+  /**
+   * The saved custom (ACP) agent the user picked, if any.
+   *
+   * Why separate from `quickAgent`: that field is a `TuiAgent` and feeds the PTY
+   * startup path, trust preflight and telemetry, none of which apply to an ACP
+   * agent. Keeping them apart means selecting a custom agent leaves `quickAgent`
+   * null — the create runs exactly as a blank one — and only the post-create step
+   * differs.
+   */
+  quickCustomAgentId?: string | null
+  onQuickCustomAgentChange?: (profileId: string | null) => void
   onQuickAgentChange: (agent: TuiAgent | null) => void
   eligibleRepos: readonly RepoOption[]
   repoId: string

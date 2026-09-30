@@ -51,6 +51,8 @@ export function EditorDiffFileSurface({
     )
   }
 
+  // Snapshot diffs are comparison-only: editing would mutate the live file from a
+  // view that was opened as a keep/revert review, which is the wrong affordance.
   const isEditable = activeFile.diffSource === 'unstaged'
   if (diffContent.kind === 'binary') {
     if (diffContent.isImage) {

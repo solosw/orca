@@ -14,6 +14,7 @@ import TerminalPaneOverlayLayer from './terminal-pane/TerminalPaneOverlayLayer'
 import { RetainedBrowserPaneOverlayLayer } from './browser-pane/assemble-chrome/BrowserPaneOverlayLayer'
 import EmulatorPaneOverlayLayer from './emulator-pane/EmulatorPaneOverlayLayer'
 import StructuredAgentSessionPaneOverlayLayer from './native-chat/StructuredAgentSessionPaneOverlayLayer'
+import AcpSessionPaneOverlayLayer from './acp/AcpSessionPaneOverlayLayer'
 import AiVaultSessionDropLayer from './tab-group/AiVaultSessionDropLayer'
 
 export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
@@ -93,6 +94,7 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
         worktreeId={worktreeId}
         isWorktreeActive={isVisible}
       />
+      <AcpSessionPaneOverlayLayer worktreeId={worktreeId} isWorktreeActive={isVisible} />
       <AiVaultSessionDropLayer worktreeId={worktreeId} enabled={isVisible} />
     </div>
   )

@@ -32,6 +32,8 @@ import {
   type WorktreeActivationSurfaceSelection
 } from './worktree-activation-surface-selection'
 import { gateAndReseedEmptyWorkspace } from './worktree-activation-gated-empty-reseed'
+import { startDefaultCustomAgentForEmptyWorkspace } from './worktree-creation-custom-agent-start'
+import { getConnectionId } from '@/lib/connection-context'
 
 /**
  * Shared activation sequence used by the worktree palette and add-repo/worktree dialogs.
@@ -207,6 +209,21 @@ export function activateAndRevealWorktree(
   state.setActiveWorktree(worktreeId, opts?.executionHostId)
   const postActivationState = useAppStore.getState()
   const ownerRuntimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(postActivationState, wt.id)
+  const initialTabCount = postActivationState.reconcileWorktreeTabModel(worktreeId).renderableTabCount
+  let defaultCustomAgentTabCreated = false
+  if (
+    initialTabCount === 0 &&
+    !hasActivationWork &&
+    !providesInitialSurface &&
+    postActivationState.settings?.defaultCustomAgentId
+  ) {
+    defaultCustomAgentTabCreated =
+      startDefaultCustomAgentForEmptyWorkspace({
+        worktreeId,
+        worktreePath: wt.path,
+        connectionId: getConnectionId(worktreeId)
+      }) !== null
+  }
   if (opts?.notifyHostRuntime !== false && isWebRuntimeSessionActive(ownerRuntimeEnvironmentId)) {
     // Why: paired web clients own only local selection, so the desktop host publishes session surfaces without treating it as a nav command.
     void activateWebRuntimeSessionWorktree({
@@ -231,6 +248,7 @@ export function activateAndRevealWorktree(
   // fallback terminal beside a chat that is about to appear.
   const shouldGateAgentActivation =
     !hasActivationWork &&
+    !defaultCustomAgentTabCreated &&
     (workspaceHasSleepingAgentSessions(postActivationState, worktreeId) ||
       (canInspectAgentActivationInventory() &&
         shouldAutoCreateInitialTerminal(
@@ -305,7 +323,8 @@ export function activateAndRevealWorktree(
   if (
     opts?.notifyHostRuntime !== false &&
     !opts?.backendStartupTerminalSpawned &&
-    opts?.providesInitialSurface !== true
+    opts?.providesInitialSurface !== true &&
+    !defaultCustomAgentTabCreated
   ) {
     ensureWebRuntimeWorktreeTerminalAfterWake(worktreeId, {
       startup: opts?.startup,
