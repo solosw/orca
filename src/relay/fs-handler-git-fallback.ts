@@ -41,9 +41,9 @@ import { buildRelayGitEnv } from './relay-command-env'
 export function listFilesWithGit(
   rootPath: string,
   excludePathPrefixes: readonly string[] = [],
-  options: { signal?: AbortSignal; maxResults?: number } = {}
+  options: { signal?: AbortSignal; maxResults?: number; includeIgnoredFiles?: boolean } = {}
 ): Promise<string[]> {
-  const { signal, maxResults } = options
+  const { signal, maxResults, includeIgnoredFiles } = options
   if (signal?.aborted) {
     return Promise.reject(fileListingCancellationError(signal))
   }
@@ -234,11 +234,13 @@ export function listFilesWithGit(
       }
     })
   const passes =
-    maxResults === undefined
-      ? Promise.all([runGitLsFiles(primary), runIgnoredPass()])
-      : runGitLsFiles(primary).then(() =>
-          directFileCandidates.size < maxResults ? runIgnoredPass() : Promise.resolve()
-        )
+    includeIgnoredFiles === false
+      ? runGitLsFiles(primary)
+      : maxResults === undefined
+        ? Promise.all([runGitLsFiles(primary), runIgnoredPass()])
+        : runGitLsFiles(primary).then(() =>
+            directFileCandidates.size < maxResults ? runIgnoredPass() : Promise.resolve()
+          )
 
   return passes
     .then(async () => {

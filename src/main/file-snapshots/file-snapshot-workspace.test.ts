@@ -41,4 +41,14 @@ describe('SSH file snapshot workspace', () => {
       kind: 'oversized'
     })
   })
+
+  it('lists tracked files without the Quick Open ignored pass', async () => {
+    provider.listFiles.mockResolvedValue(['src/index.ts'])
+    const workspace = createSshFileSnapshotWorkspace('/remote/repo/', 'connection-1')
+
+    await expect(workspace.listTrackedFiles()).resolves.toEqual(['src/index.ts'])
+    expect(provider.listFiles).toHaveBeenCalledWith('/remote/repo', {
+      includeIgnoredFiles: false
+    })
+  })
 })

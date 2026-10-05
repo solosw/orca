@@ -70,7 +70,11 @@ function countLines(content: Buffer | null): Map<string, number> {
   return counts
 }
 
-const FILE_SNAPSHOT_CAPTURE_CONCURRENCY = 8
+// Why 4 not 8: remote capture shares the SSH relay stream budget (max 16) with
+// editor/explorer reads. Each file still does a stream open, and the provider
+// already gates at 8; staying lower here leaves headroom so capture cannot
+// monopolize the connection when the UI is also reading files.
+const FILE_SNAPSHOT_CAPTURE_CONCURRENCY = 4
 
 function uniqueRelativePaths(relativePaths: readonly string[]): string[] {
   const seen = new Set<string>()

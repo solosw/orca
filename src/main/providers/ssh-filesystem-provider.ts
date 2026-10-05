@@ -41,6 +41,12 @@ import {
   writeSshTerminalArtifact
 } from './ssh-filesystem-terminal-artifact'
 import { readSshDocPreviewFile } from './ssh-filesystem-doc-preview'
+import {
+  createConcurrencyGate,
+  runWithSshFileStreamSlot,
+  SSH_FILE_STREAM_READ_CONCURRENCY,
+  type ConcurrencyGate
+} from '../ssh/ssh-filesystem-stream-concurrency'
 const WORKSPACE_SPACE_SCAN_TIMEOUT_MS = 130_000
 export class SshFilesystemProvider implements IFilesystemProvider {
   private connectionId: string
@@ -50,6 +56,8 @@ export class SshFilesystemProvider implements IFilesystemProvider {
   private tempDirPromise: Promise<string> | null = null
   private disposed = false
   private loggedStreamFallback = false
+  /** One gate per connection so bulk readers share the relay stream budget. */
+  private readonly fileStreamGate: ConcurrencyGate
   readonly downloadFolder?: IFilesystemProvider['downloadFolder']
 
   constructor(
@@ -61,6 +69,7 @@ export class SshFilesystemProvider implements IFilesystemProvider {
   ) {
     this.connectionId = connectionId
     this.mux = mux
+    this.fileStreamGate = createConcurrencyGate(SSH_FILE_STREAM_READ_CONCURRENCY)
 
     if (createSftp) {
       // Why: system SSH has raw single-file transfer but no ssh2 SFTP channel;
@@ -107,21 +116,24 @@ export class SshFilesystemProvider implements IFilesystemProvider {
     // frame budget (~12 MB after base64) don't hit MAX_MESSAGE_SIZE. Old relays
     // that don't implement fs.readFileStream surface as MethodNotFound; we fall
     // back to the legacy single-shot fs.readFile (which retains the old 10 MB
-    // cap on those hosts).
-    try {
-      return await readFileViaStream(this.mux, filePath, limits)
-    } catch (err) {
-      if (isMethodNotFoundError(err)) {
-        if (!this.loggedStreamFallback) {
-          this.loggedStreamFallback = true
-          console.warn(
-            '[ssh-fs] Relay does not implement fs.readFileStream; falling back to fs.readFile (10 MB cap)'
-          )
+    // cap on those hosts). Stream opens are gated + retried so bulk captures
+    // cannot exhaust the relay's 16 concurrent-stream budget.
+    return runWithSshFileStreamSlot(this.fileStreamGate, async () => {
+      try {
+        return await readFileViaStream(this.mux, filePath, limits)
+      } catch (err) {
+        if (isMethodNotFoundError(err)) {
+          if (!this.loggedStreamFallback) {
+            this.loggedStreamFallback = true
+            console.warn(
+              '[ssh-fs] Relay does not implement fs.readFileStream; falling back to fs.readFile (10 MB cap)'
+            )
+          }
+          return (await this.mux.request('fs.readFile', { filePath })) as FileReadResult
         }
-        return (await this.mux.request('fs.readFile', { filePath })) as FileReadResult
+        throw err
       }
-      throw err
-    }
+    })
   }
 
   readDocPreviewFile(
@@ -317,6 +329,11 @@ export class SshFilesystemProvider implements IFilesystemProvider {
     }
     if (options?.searchQuery !== undefined) {
       params.searchQuery = options.searchQuery
+    }
+    if (options?.includeIgnoredFiles === false) {
+      // Why only send false: older relays ignore unknown params, and omitting
+      // keeps Quick Open's default (include ignored) without a wire change.
+      params.includeIgnoredFiles = false
     }
     // Why #7721: the signal lets a workspace switch send rpc.cancel so the
     // relay aborts the full-tree scan instead of stacking abandoned scans

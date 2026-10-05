@@ -17,14 +17,16 @@ export async function runListFilesScan(
   excludePathPrefixes: string[],
   signal: AbortSignal,
   maxResults?: number,
-  searchQuery?: string
+  searchQuery?: string,
+  includeIgnoredFiles?: boolean
 ): Promise<string[]> {
   throwIfFileListingCancelled(signal)
   try {
     return await listFilesWithRg(rootPath, excludePathPrefixes, {
       signal,
       maxResults,
-      searchQuery
+      searchQuery,
+      includeIgnoredFiles
     })
   } catch (error) {
     throwIfFileListingCancelled(signal)
@@ -57,7 +59,8 @@ export async function runListFilesScan(
       return rankFallbackFiles(
         await listFilesWithGit(rootPath, excludePathPrefixes, {
           signal,
-          maxResults: searchQuery === undefined ? maxResults : undefined
+          maxResults: searchQuery === undefined ? maxResults : undefined,
+          includeIgnoredFiles
         }),
         searchQuery,
         maxResults

@@ -18,7 +18,11 @@ import { listFilesWithRg } from './fs-handler-list-files'
 import { searchWithRg } from './fs-handler-utils'
 import { RipgrepUnavailableError } from '../shared/ripgrep-process-availability'
 import { buildRelayCommandEnv } from './relay-command-env'
-import { configureRelayBundledRipgrep } from './relay-bundled-ripgrep'
+import {
+  configureRelayBundledRipgrep,
+  pathRipgrepCommand,
+  resetRelayRipgrepPathCacheForTests
+} from './relay-bundled-ripgrep'
 import {
   ListFilesScanCoordinator,
   LIST_FILES_SUPERSEDED_MESSAGE
@@ -62,12 +66,18 @@ async function writeRel(root: string, relPath: string, content = 'x'): Promise<v
 describe('relay quick open ignored file listing', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Why execPath: Windows hosts without PATH rg make resolveRelayRipgrepCommand()
+    // return null and throw before spawn. Point at any existing file so the suite
+    // exercises the mocked spawn path instead of the missing-rg fallback.
+    configureRelayBundledRipgrep(process.execPath)
+    resetRelayRipgrepPathCacheForTests()
   })
 
   afterEach(async () => {
     // Why reset: the bundled path is module state, and leaking it changes which binary the next
     // test's launch-failure classifier probes.
     configureRelayBundledRipgrep(undefined)
+    resetRelayRipgrepPathCacheForTests()
     await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
   })
 
@@ -107,6 +117,33 @@ describe('relay quick open ignored file listing', () => {
     expect(ignoredArgs).toContain('!**/node_modules')
     expect(ignoredArgs).toContain('!packages/other')
     expect(ignoredArgs).toContain('!packages/other/**')
+  })
+
+  it('skips the ignored rg pass when includeIgnoredFiles is false', async () => {
+    const primaryProc = createMockProcess()
+    const ignoredProc = createMockProcess()
+    spawnMock.mockImplementation((_cmd: string, args: string[]) => {
+      if (args.includes('--no-ignore-vcs')) {
+        return ignoredProc
+      }
+      return primaryProc
+    })
+
+    const promise = listFilesWithRg('/remote/root', [], { includeIgnoredFiles: false })
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]).not.toContain('--no-ignore-vcs')
+
+    setTimeout(() => {
+      ;(primaryProc.stdout as unknown as EventEmitter).emit('data', 'src/index.ts\n')
+      ;(primaryProc.stdout as unknown as EventEmitter).emit('data', 'dist/generated.js\n')
+      primaryProc.emit('close', 0, null)
+    }, 10)
+
+    // Primary rg already respects .gitignore, so dist/ should not appear even if
+    // the mock emits it — the important contract is that the ignored pass never starts.
+    await expect(promise).resolves.toEqual(['src/index.ts', 'dist/generated.js'])
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(ignoredProc.kill).not.toHaveBeenCalled()
   })
 
   it('stops after the primary relay rg pass fills the result budget', async () => {
@@ -338,6 +375,28 @@ describe('relay quick open ignored file listing', () => {
     expect(ignoredArgs).toContain('--no-empty-directory')
     expect(ignoredArgs).toContain(':(exclude,glob)packages/other')
     expect(ignoredArgs).toContain(':(exclude,glob)packages/other/**')
+  })
+
+  it('skips the git ignored pass when includeIgnoredFiles is false', async () => {
+    const root = await makeTempRoot()
+    await writeRel(root, 'src/index.ts')
+    const primaryProc = createMockProcess()
+    const ignoredProc = createMockProcess()
+    spawnMock.mockImplementation((_cmd: string, args: string[]) =>
+      args.includes('--ignored') ? ignoredProc : primaryProc
+    )
+
+    const promise = listFilesWithGit(root, [], { includeIgnoredFiles: false })
+    ;(primaryProc.stdout as unknown as EventEmitter).emit(
+      'data',
+      `${staged('100644', 'src/index.ts')}\0`
+    )
+    primaryProc.emit('close', 0, null)
+
+    await expect(promise).resolves.toEqual(['src/index.ts'])
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]).not.toContain('--ignored')
+    expect(ignoredProc.kill).not.toHaveBeenCalled()
   })
 
   it('stops after primary relay Git files fill the result budget', async () => {
@@ -645,7 +704,12 @@ describe('relay quick open ignored file listing', () => {
   // Why this changed: both paths still refuse the git/readdir fallback, which is what "non-fallback"
   // pinned -- a chain that walks the root cannot help when the root is gone. What changed is that
   // search no longer reports an empty, successful-looking scan for a workspace that moved.
-  it('names the unreachable root on both missing-root launch paths', async () => {
+  it.runIf(pathRipgrepCommand() !== null)('names the unreachable root on both missing-root launch paths', async () => {
+    // Why clear bundled: this case pins PATH `rg` probing. The suite's beforeEach
+    // installs process.execPath so Windows hosts without PATH rg still reach spawn;
+    // that would make the probe assert against the bundled binary instead.
+    configureRelayBundledRipgrep(undefined)
+    resetRelayRipgrepPathCacheForTests()
     const missingRoot = await makeTempRoot()
     await rm(missingRoot, { recursive: true, force: true })
     const listFirst = createMockProcess()

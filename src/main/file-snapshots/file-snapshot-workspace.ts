@@ -152,7 +152,10 @@ export function createSshFileSnapshotWorkspace(
   return {
     listTrackedFiles: async () => {
       const provider = requireSshFilesystemProvider(connectionId)
-      return provider.listFiles(root)
+      // Why false: local snapshots use listQuickOpenFiles primary-only. The SSH
+      // Quick Open listing unions an ignored pass by default, which would put
+      // build artifacts into the snapshot baseline and make revert restore them.
+      return provider.listFiles(root, { includeIgnoredFiles: false })
     },
     readTextFile: async (relativePath) => {
       const provider = requireSshFilesystemProvider(connectionId)

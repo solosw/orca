@@ -106,6 +106,9 @@ export type IFilesystemProvider = {
       signal?: AbortSignal
       maxResults?: number
       searchQuery?: string
+      /** Why optional/default-true: Quick Open wants ignored files as a fallback
+       *  tier, but snapshots must respect .gitignore. Omit or true keeps Quick Open. */
+      includeIgnoredFiles?: boolean
     }
   ): Promise<string[]>
   supportsQuickOpenSearch?(options?: { signal?: AbortSignal }): Promise<boolean>

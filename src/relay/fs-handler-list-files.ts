@@ -44,9 +44,14 @@ export const LIST_FILES_TIMEOUT_MS = 25_000
 export function listFilesWithRg(
   rootPath: string,
   excludePathPrefixes: readonly string[] = [],
-  options: { signal?: AbortSignal; maxResults?: number; searchQuery?: string } = {}
+  options: {
+    signal?: AbortSignal
+    maxResults?: number
+    searchQuery?: string
+    includeIgnoredFiles?: boolean
+  } = {}
 ): Promise<string[]> {
-  const { signal, maxResults, searchQuery } = options
+  const { signal, maxResults, searchQuery, includeIgnoredFiles } = options
   if (signal?.aborted) {
     return Promise.reject(fileListingCancellationError(signal))
   }
@@ -327,6 +332,12 @@ export function listFilesWithRg(
         ? runPass(ignoredPass)
         : (() => {
             const primaryPass = runPass(primary)
+            // Why skip ignored when false: File Snapshots must match local
+            // listQuickOpenFiles({ includeIgnoredFiles: false }). Quick Open
+            // omits the flag and still gets both passes.
+            if (includeIgnoredFiles === false) {
+              return primaryPass
+            }
             return maxResults === undefined
               ? children[0]?.child.pid === undefined
                 ? primaryPass.then(() => runPass(ignoredPass))

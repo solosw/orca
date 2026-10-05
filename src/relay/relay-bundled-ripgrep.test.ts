@@ -11,6 +11,7 @@ vi.mock('./relay-diagnostic-log', () => ({ relayLogLine: vi.fn() }))
 
 import {
   configureRelayBundledRipgrep,
+  pathRipgrepCommand,
   resolveRelayRipgrepCommand,
   retryRipgrepOnPathAfterLaunchFailure
 } from './relay-bundled-ripgrep'
@@ -60,12 +61,13 @@ describe('relay bundled ripgrep', () => {
     rmSync(dir, { recursive: true, force: true })
   })
 
-  it('prefers the bundled binary and uses PATH rg when none is configured or present', () => {
+  it('prefers the bundled binary and falls back to the detected PATH rg', () => {
+    const pathCommand = pathRipgrepCommand()
     expect(resolveRelayRipgrepCommand()).toBe(bundled)
     configureRelayBundledRipgrep(join(dir, 'not-uploaded-yet', 'rg'))
-    expect(resolveRelayRipgrepCommand()).toBe('rg')
+    expect(resolveRelayRipgrepCommand()).toBe(pathCommand)
     configureRelayBundledRipgrep(undefined)
-    expect(resolveRelayRipgrepCommand()).toBe('rg')
+    expect(resolveRelayRipgrepCommand()).toBe(pathCommand)
   })
 
   it('does not blame the binary when the spawn cwd is what is missing', async () => {
@@ -76,11 +78,11 @@ describe('relay bundled ripgrep', () => {
     await expect(retryRipgrepOnPathAfterLaunchFailure('rg', dir)).resolves.toBe(false)
   })
 
-  it('backs off the bundled binary after a launch failure, then tries it again', async () => {
+  it.runIf(pathRipgrepCommand() !== null)('backs off the bundled binary after a launch failure, then tries it again', async () => {
     vi.useFakeTimers()
     try {
       await expect(retryRipgrepOnPathAfterLaunchFailure(bundled, dir)).resolves.toBe(true)
-      expect(resolveRelayRipgrepCommand()).toBe('rg')
+      expect(resolveRelayRipgrepCommand()).toBe(pathRipgrepCommand())
       vi.advanceTimersByTime(60_001)
       expect(resolveRelayRipgrepCommand()).toBe(bundled)
     } finally {
@@ -94,7 +96,8 @@ describe('relay bundled ripgrep', () => {
     expect(resolveRelayRipgrepCommand()).toBe(bundled)
   })
 
-  it('retries a file listing on PATH rg after the bundled binary fails to launch', async () => {
+  it.runIf(pathRipgrepCommand() !== null)('retries a file listing on PATH rg after the bundled binary fails to launch', async () => {
+    const pathCommand = pathRipgrepCommand() as string
     const commands: string[] = []
     spawnMock.mockImplementation((command: string) => {
       commands.push(command)
@@ -110,11 +113,12 @@ describe('relay bundled ripgrep', () => {
 
     await expect(listFilesWithRg(dir, [], { maxResults: 10 })).resolves.toEqual(['src/index.ts'])
     expect(commands[0]).toBe(bundled)
-    expect(commands.slice(1).every((command) => command === 'rg')).toBe(true)
-    expect(resolveRelayRipgrepCommand()).toBe('rg')
+    expect(commands.slice(1).every((command) => command === pathCommand)).toBe(true)
+    expect(resolveRelayRipgrepCommand()).toBe(pathCommand)
   })
 
-  it('retries a text search on PATH rg with the relay command env and a hidden window', async () => {
+  it.runIf(pathRipgrepCommand() !== null)('retries a text search on PATH rg with the relay command env and a hidden window', async () => {
+    const pathCommand = pathRipgrepCommand() as string
     const hit = JSON.stringify({
       type: 'match',
       data: {
@@ -138,11 +142,11 @@ describe('relay bundled ripgrep', () => {
     const result = await searchWithRg(dir, 'needle', { maxResults: 10 })
 
     expect(result.totalMatches).toBe(1)
-    expect(spawnMock.mock.calls.map(([command]) => command)).toEqual([bundled, 'rg'])
+    expect(spawnMock.mock.calls.map(([command]) => command)).toEqual([bundled, pathCommand])
     for (const [, , options] of spawnMock.mock.calls) {
       expect(options.windowsHide).toBe(true)
       expect(options.env.PATH ?? options.env.Path).toContain('.cargo')
     }
-    expect(resolveRelayRipgrepCommand()).toBe('rg')
+    expect(resolveRelayRipgrepCommand()).toBe(pathCommand)
   })
 })

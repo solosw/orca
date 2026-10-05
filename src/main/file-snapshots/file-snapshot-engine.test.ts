@@ -118,6 +118,29 @@ describe('FileSnapshotEngine', () => {
     expect((await engine().summary()).changes).toEqual([])
   })
 
+  it('limits concurrent capture reads so bulk remote work stays bounded', async () => {
+    let inFlight = 0
+    let peak = 0
+    for (let index = 0; index < 20; index += 1) {
+      workspace.files.set(`f${index}.ts`, `export const v${index} = ${index}\n`)
+    }
+    const originalRead = workspace.readTextFile.bind(workspace)
+    workspace.readTextFile = async (relativePath) => {
+      inFlight += 1
+      peak = Math.max(peak, inFlight)
+      await Promise.resolve()
+      try {
+        return await originalRead(relativePath)
+      } finally {
+        inFlight -= 1
+      }
+    }
+
+    const captured = await engine().capture()
+    expect(captured.trackedFileCount).toBe(20)
+    expect(peak).toBeLessThanOrEqual(4)
+  })
+
   it('classifies added, modified and deleted files', async () => {
     workspace.files.set('keep.ts', 'stable\n')
     workspace.files.set('edit.ts', 'before\n')

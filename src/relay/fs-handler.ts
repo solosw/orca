@@ -234,6 +234,9 @@ export class FsHandler {
       typeof params.searchQuery === 'string' && params.searchQuery.trim().length > 0
         ? params.searchQuery
         : undefined
+    // Why only treat explicit false: Quick Open omits the field and must keep
+    // the ignored pass. Snapshots send false so build artifacts stay out.
+    const includeIgnoredFiles = params.includeIgnoredFiles === false ? false : undefined
     // Why: the main-to-relay RPC adds excludePaths so nested linked worktrees
     // don't get double-scanned. The shared helper validates the shape and
     // normalizes into root-relative prefixes; malformed input yields [] so
@@ -244,10 +247,23 @@ export class FsHandler {
     // aborting a stale scan when the workspace changes or the host cancels.
     const files = await this.listFilesScans.run({
       clientId: context?.clientId ?? 0,
-      key: JSON.stringify([rootPath, excludePathPrefixes, maxResults, searchQuery]),
+      key: JSON.stringify([
+        rootPath,
+        excludePathPrefixes,
+        maxResults,
+        searchQuery,
+        includeIgnoredFiles
+      ]),
       signal: context?.signal,
       start: (signal) =>
-        runListFilesScan(rootPath, excludePathPrefixes, signal, maxResults, searchQuery)
+        runListFilesScan(
+          rootPath,
+          excludePathPrefixes,
+          signal,
+          maxResults,
+          searchQuery,
+          includeIgnoredFiles
+        )
     })
     // Why: a full listing of a real monorepo serializes past the 1 MiB control lane — Orca's own
     // checkout is 22.6k paths averaging 58 characters, so a 20,001-row page is ~1.2MB — and the

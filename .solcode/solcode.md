@@ -2,10 +2,11 @@
 
 Written by the model at session end. Newest entries last.
 
-## 2026-09-25 20:26:36 · session task-1 · turn -1 · importance 0.70
-- keywords: rpc, preload, ipc, workspace-ports, mapping, catalog, localization
+## 2026-10-01 00:41:31 · session task-1 · turn -1 · importance 0.35
+- keywords: rpc, preload, ipc, workspace-ports, mapping, catalog, localization, todolist, todo-write
+- todos: 1|Find createLocal/SshFileSnapshotWorkspace and listFiles paths|completed|invalid|done; 2|Inspect SshFilesystemProvider.listFiles vs gitignore|completed|invalid|done; 3|Inspect listQuickOpenFiles local/remote behavior|completed|invalid|done; 4|Find remote git ls-files / SC ignore-aware listing helpers|completed|invalid|done; 5|Summarize evidence + minimal fix approach|in_progress|valid|open
 
-Read-only reconnaissance of how a new backend feature is wired in Orca, using workspace-ports + fs as references. Produced a structured markdown report (no files modified). Key findings: (1) two independent transports coexist — Electron IPC (`ipcRenderer.invoke` from src/preload/api/*-bridge.ts, handler registered in src/main/ipc/* and called from src/main/ipc/register-core-handlers/register-core-handlers.ts) and runtime RPC (`src/main/runtime/rpc/methods/*` registered in methods/index.ts ALL_RPC_METHODS, bound via buildRegistry in dispatcher.ts) used by mobile/web/remote; (2) new RPC methods need a Zod schema in src/shared/rpc-contract/ and a regenerated rpc-params-catalog.generated.ts — the generator matches schemas by object identity, and rpc-params-type-parity.ts fails typecheck for uncataloged methods beyond a 3-name allowlist; (3) a new preload surface touches 4 preload files plus a main handler, with an optional-but-conventional web mirror (src/renderer/src/web/preload-api/) that is NOT gated because withFallback is a Proxy, though web-preload-api-composition.test.ts pins the exact window.api key list; (4) no dedicated repo doc for adding an RPC/IPC method — only root AGENTS.md rules on reuse, remote wire compatibility, and SSH; (5) localization verifies scan only src/renderer/src/, so preload/RPC names need no locale entries, and `pnpm lint` chains verify:rpc-params-catalog plus four localization verifies. Unconfirmed: whether check-reliability-gates.mjs or check-runtime-electron-ratchet.mjs maintain an IPC-channel registry (not opened).
+Todolist update (5 items).
 
 ## 2026-09-25 21:12:22 · session task-3 · turn -1 · importance 0.60
 - keywords: file snapshot, content-addressed store, checkpoint, fs:changed, fschangedpayload, git-status-types, userdata paths
@@ -629,3 +630,71 @@ Turn memory: 还有一个问题就是ACPUI如果和文件预览这种面板一�
 - files: config/oxlint-dead-classes.json
 
 Turn memory: 还有一个bug。就是工作超过30min后明明ACPUi还在工作但是项目状态栏却是idel
+
+## 2026-09-30 23:34:06 · session acp-1790514002765653500-1 · turn 31 · importance 0.90
+- keywords: todolist, todo-write, turn, organizer, archival, close, tabs, worktree, file-snapshot, diff, status
+- files: config/oxlint-dead-classes.json
+- memory_ids: mem_6d3aef6938cdbec4, mem_d26163473a5cc3af
+
+Organizer: Two issues reported and fixed:\n1. ACP UI hid when closing a co-located file preview/editor tab (agent kept running).\n2. File Snapshots preview should open like git diff in the main window, not a small dialog (read-only).\n\n### Earlier (2
+
+## 2026-10-01 01:21:04 · session acp-1790514002765653500-1 · turn 32 · importance 0.40
+- keywords: todolist, todo-write, turn
+- files: config/oxlint-dead-classes.json
+- todos: 1|Find configureRelayBundledRipgrep / resetRelayRipgrepPathCacheForTests usage|completed|valid|done; 2|Read fs-handler-list-files-ignored and cancel tests for spawn expectations|completed|valid|done; 3|Check git fallback tests for execFile vs spawn mocks|completed|valid|done; 4|Run related tests and typecheck|in_progress|valid|open
+
+Turn memory: 远程怎么没有对git忽略文件进行过滤？
+
+## 2026-10-01 01:03:53 · session task-2 · turn -1 · importance 0.35
+- keywords: todolist, todo-write
+- todos: 2|Read fs-handler-utils, fallback-chain, list-files|completed|valid|done; 3|Read filesystem contract + SSH provider|completed|valid|done; 4|Find RPC schema + ignored-pass tests + git fallback|completed|valid|done; 5|Produce minimal change list|completed|valid|done
+
+Todolist update (4 items).
+
+## 2026-10-01 01:11:32 · session task-4 · turn -1 · importance 0.35
+- keywords: todolist, todo-write
+- todos: 1|Find configureRelayBundledRipgrep / resetRelayRipgrepPathCacheForTests usage|in_progress|invalid|open; 2|Read fs-handler-list-files-ignored and cancel tests for spawn expectations|pending|invalid|open; 3|Check git fallback tests for execFile vs spawn mocks|pending|valid|open
+
+Todolist update (3 items).
+
+## 2026-10-01 01:20:12 · session mid-run · turn -1 · importance 0.80
+- keywords: organizer, archival, status, idle, waiting, agent-status, workspace-status
+- memory_ids: mem_b0e672d6b008d840
+
+Organizer: 用户请求：在 ACP 会话状态栏中，当工作超过 30 分钟且项目状态栏显示 idle 时，应自动切换到“等待用户”状态，而非继续运行。该功能需要在 ACP 会话状态桥中实现，并在状态栏组件中通过 `setAgentStatus` 和 `removeAgentStatus` 操作完成状态切换。该功能已在 ACP 会话状态桥中实现，但需要验证远程 gitignore 过滤改动是否完整，并确认 PATH 上的 `rg` 命令在测试用例中是否被正确清除。
+
+## 2026-10-05 22:11:15 · session acp-1790514002765653500-1 · turn 33 · importance 0.40
+- keywords: turn, todolist
+- files: config/oxlint-dead-classes.json
+- todos: 1|Find configureRelayBundledRipgrep / resetRelayRipgrepPathCacheForTests usage|completed|invalid|done; 2|Read fs-handler-list-files-ignored and cancel tests for spawn expectations|completed|invalid|done; 3|Check git fallback tests for execFile vs spawn mocks|completed|invalid|done; 4|Run related tests and typecheck|in_progress|valid|open
+
+Turn memory: 继续
+
+## 2026-10-05 22:12:39 · session acp-1790514002765653500-1 · turn 34 · importance 0.50
+- keywords: turn, todolist, organizer, archival, task, workflow, agent-status
+- files: config/oxlint-dead-classes.json
+- memory_ids: mem_b0e672d6b008d840
+
+Organizer: 用户请求：在 ACP 会话状态桥中实现工作超过 30 分钟且项目状态栏显示 idle 时自动切换到“等待用户”状态，并在状态栏组件中通过 setAgentStatus 和 removeAgentStatus 操作完成状态切换。
+
+## 2026-10-05 22:15:46 · session acp-1790514002765653500-1 · turn 35 · importance 0.40
+- keywords: turn, todolist
+- files: config/oxlint-dead-classes.json
+- todos: 1|Find configureRelayBundledRipgrep / resetRelayRipgrepPathCacheForTests usage|completed|invalid|done; 2|Read fs-handler-list-files-ignored and cancel tests for spawn expectations|completed|invalid|done; 3|Check git fallback tests for execFile vs spawn mocks|completed|invalid|done; 4|Run related tests and typecheck|in_progress|valid|open
+
+Turn memory: 继续
+
+## 2026-10-05 22:16:55 · session acp-1790514002765653500-1 · turn 36 · importance 0.40
+- keywords: organizer, archival, gitignore, retry, timeout, turn, todolist
+- files: config/oxlint-dead-classes.json, src/relay/relay-bundled-ripgrep.test.ts
+- memory_ids: mem_af0a2d63d3a8b57d
+- todos: 1|Find configureRelayBundledRipgrep / resetRelayRipgrepPathCacheForTests usage|completed|invalid|done; 2|Read fs-handler-list-files-ignored and cancel tests for spawn expectations|completed|invalid|done; 3|Check git fallback tests for execFile vs spawn mocks|completed|invalid|done; 4|Run related tests and typecheck|in_progress|valid|open
+
+Turn memory: 继续
+
+## 2026-10-05 22:27:47 · session acp-1790514002765653500-1 · turn 37 · importance 0.80
+- keywords: todolist, todo-write, turn, organizer, archival, task, workflow, ACP
+- files: config/oxlint-dead-classes.json, src/relay/relay-bundled-ripgrep.test.ts
+- memory_ids: mem_b0e672d6b008d840
+
+Organizer: 用户请求：在 ACP 会话状态桥中实现工作超过 30 分钟且项目状态栏显示 idle 时自动切换到“等待用户”状态，并在状态栏组件中通过 setAgentStatus 和 removeAgentStatus 操作完成状态切换。

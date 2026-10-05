@@ -145,6 +145,61 @@ describe('SshFilesystemProvider readFile streaming', () => {
     expect(result).toEqual(legacyResult)
   })
 
+  it('caps concurrent fs.readFileStream opens on one connection', async () => {
+    let inFlight = 0
+    let peak = 0
+    let started = 0
+    const firstWave = Promise.withResolvers<void>()
+    const hold = Promise.withResolvers<void>()
+    mux._response.mockImplementation(async () => {
+      inFlight += 1
+      peak = Math.max(peak, inFlight)
+      started += 1
+      if (started === 8) {
+        firstWave.resolve()
+      }
+      await hold.promise
+      inFlight -= 1
+      return {
+        totalSize: 0,
+        isBinary: false,
+        empty: true,
+        resultEncoding: 'utf-8'
+      }
+    })
+
+    const reads = Promise.all(
+      Array.from({ length: 20 }, (_, index) => provider.readFile(`/home/user/file-${index}.txt`))
+    )
+    await firstWave.promise
+    expect(started).toBe(8)
+    expect(inFlight).toBe(8)
+    expect(peak).toBe(8)
+    hold.resolve()
+    await expect(reads).resolves.toHaveLength(20)
+    expect(peak).toBe(8)
+    expect(mux.request).toHaveBeenCalledTimes(20)
+  })
+
+  it('retries TooManyStreams from the relay a few times before failing', async () => {
+    vi.useFakeTimers()
+    let attempts = 0
+    mux._response.mockImplementation(async () => {
+      attempts += 1
+      if (attempts < 3) {
+        const err = new Error('Too many concurrent streams (max 16)') as Error & { code: number }
+        err.code = -33006
+        throw err
+      }
+      return { totalSize: 0, isBinary: false, empty: true }
+    })
+
+    const read = provider.readFile('/home/user/busy.txt')
+    await vi.runAllTimersAsync()
+    await expect(read).resolves.toEqual({ content: '', isBinary: false })
+    expect(attempts).toBe(3)
+  })
+
   it('rejects when chunk arrives out of order', async () => {
     const totalSize = 256 * 1024 * 2
     mux._response.mockImplementation(async () => {
