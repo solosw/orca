@@ -41,10 +41,17 @@ jobs:
           cd mobile
           pnpm install --frozen-lockfile
 
-      - name: Build Windows app
-        run: pnpm run build:win
+      - name: Build desktop app
+        run: pnpm run build:desktop
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Package Windows app
+        run: pnpm run ensure:electron-runtime && pnpm exec electron-builder --config config/electron-builder.config.cjs --win --publish never
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          # 禁用 electron-builder 的发布功能
+          PUBLISH: never
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -83,12 +90,25 @@ jobs:
           cd mobile
           pnpm install --frozen-lockfile
 
-      - name: Build macOS app
-        run: pnpm run build:mac
+      - name: Build macOS native modules
+        run: |
+          pnpm run build:computer-macos
+          pnpm run build:keyboard-layout-macos
+          pnpm run build:notification-status-macos
+
+      - name: Build desktop app
+        run: pnpm run build:desktop
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Package macOS app
+        run: pnpm run ensure:electron-runtime && pnpm exec electron-builder --config config/electron-builder.config.cjs --mac --publish never
         env:
           NODE_OPTIONS: --max-old-space-size=4096
           # 跳过签名和公证（开发构建）
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          # 禁用 electron-builder 的发布功能
+          PUBLISH: never
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
