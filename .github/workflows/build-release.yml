@@ -1,0 +1,160 @@
+name: Build Windows and macOS Release
+
+# 手动触发工作流
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or tag to build (default: current branch)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write  # 需要写权限来创建 Release
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Windows app
+        run: pnpm run build:win
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
+          retention-days: 30
+
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - name: Install dependencies (both architectures)
+        run: pnpm install --frozen-lockfile --cpu=current,x64,arm64
+
+      - name: Install mobile dependencies
+        run: |
+          cd mobile
+          pnpm install --frozen-lockfile
+
+      - name: Build macOS app
+        run: pnpm run build:mac
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          # 跳过签名和公证（开发构建）
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.dmg.blockmap
+            dist/latest-mac.yml
+          retention-days: 30
+
+  create-release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION-dev-$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Development Build ${{ steps.version.outputs.version }}
+          body: |
+            # Development Build
+
+            **Version:** ${{ steps.version.outputs.version }}
+            **Built from:** ${{ github.ref }}
+            **Commit:** ${{ github.sha }}
+
+            ## ⚠️ Important Notes
+
+            ### Windows
+            - This is an **unsigned** build
+            - Windows SmartScreen will show a warning on first install
+            - Click "More info" → "Run anyway" to install
+
+            ### macOS
+            - This is an **unsigned** build (no Apple Developer signature)
+            - You may need to allow the app in System Settings → Privacy & Security
+            - Or use: `xattr -cr /Applications/Orca.app` after installation
+
+            ## Installation
+
+            1. Download the appropriate installer for your platform below
+            2. Run the installer
+            3. Follow the platform-specific instructions above if needed
+
+            ---
+            Built with GitHub Actions
+          draft: false
+          prerelease: true
+          files: |
+            artifacts/**/*

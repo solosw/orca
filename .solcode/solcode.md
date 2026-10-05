@@ -698,3 +698,22 @@ Turn memory: 继续
 - memory_ids: mem_b0e672d6b008d840
 
 Organizer: 用户请求：在 ACP 会话状态桥中实现工作超过 30 分钟且项目状态栏显示 idle 时自动切换到“等待用户”状态，并在状态栏组件中通过 setAgentStatus 和 removeAgentStatus 操作完成状态切换。
+
+## 2026-10-05 22:37:04 · session acp-1790514002765653500-1 · turn 38 · importance 0.40
+- keywords: turn, todolist
+- files: config/oxlint-dead-classes.json, src/relay/relay-bundled-ripgrep.test.ts
+
+Turn memory: 打包windows和mac的
+
+## 2026-10-05 22:38:55 · session acp-1790514002765653500-1 · turn 39 · importance 0.50
+- keywords: turn, todolist, organizer, archival, task, workflow, ACP
+- files: config/oxlint-dead-classes.json, src/relay/relay-bundled-ripgrep.test.ts
+- memory_ids: mem_b0e672d6b008d840
+
+Organizer: 用户请求：在 ACP 会话状态桥中实现工作超过 30 分钟且项目状态栏显示 idle 时自动切换到“等待用户”状态，并在状态栏组件中通过 setAgentStatus 和 removeAgentStatus 操作完成状态切换。
+
+## 2026-10-05 22:44:41 · session acp-1790514002765653500-1 · turn 40 · importance 0.90
+- keywords: turn, todolist, organizer, archival, remote, snapshot, concurrency, ssh, retry, gate
+- files: .github/workflows/build-release.yml, config/oxlint-dead-classes.json, src/relay/relay-bundled-ripgrep.test.ts
+
+Organizer: 远程文件快照捕获失败：RelayStreamRegistry 硬编码的 16 并发限制导致批量快照 + 编辑器/探索器并发读取引发过多连接，需添加共享客户端流半透膜和重试机制。已修复 SSH 连接级并发门控 + 超时重试，将 FILE_SNAPSHOT_CAPTURE_CONCURRENCY 从 8 降至 4，并在 ssh-filesystem-stream-concurrency.ts 中新增 createConcurrencyGate、isTooManyStreams 和
